@@ -12,6 +12,11 @@ This is only needed if you want to use the make commands to compile the program.
 ```
 sudo apt install make
 ```
+### openmp
+Depending on your operating system, you may need to install openmp
+```
+sudo apt install libomp-dev
+```
 # Installation
 Clone the github repo:
 ```
