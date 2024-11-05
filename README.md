@@ -1,7 +1,14 @@
 # GONE2
 Demographic history from the observed spectrum of linkage disequilibrium
 
-# Prerequisites
+# System requirements
+## Hardware requirements
+`gone2` requires only a standard computer with enough RAM to support the in-memory operations.
+# Software requirementes
+## OS Requirements
+This program has been tested on the following operating systems but should work on most linux distributions
+    - Linux: Ubuntu 20.04, Arch Linux (kernel 6.11.6), Debian Buster
+## Software required for compiling
 ### g++
 It should be included in (almost) every linux distribution. To install it in debian-like distributions:
 ```
@@ -18,6 +25,10 @@ Depending on your operating system, you may need to install openmp
 sudo apt install libomp-dev
 ```
 # Installation
+It is recommended that you compile the source code, since it will most likely be faster. However we also provide a precompiled version
+## Pre-built version
+You can download it from the releases section of this repo.
+## Compiling
 Clone the github repo:
 ```
 git clone https://github.com/esrud/GONE2
@@ -27,11 +38,7 @@ Compile:
 cd GONE2
 make gone
 ```
-Another way to compile the program, which will link it statically:
-```
-make static
-```
-This program is quite heavy on memory usage. By default it's limited to 2.000.000 loci and 1000 samples/individuals. You can change this by compiling with:
+This program makes an extensive use of memory. By default it's limited to 2.000.000 loci and 1000 samples/individuals. You can change this by compiling with:
 ```
 g++ -fopenmp -DMAXLOCI=YOUR_NUMBER_OF_LOCI -DMAXIND=YOUR_NUMBER_OF_INDIVIDUALS -O2 -o gone2 gone2.cpp lib/*.cpp
 ```
@@ -39,7 +46,6 @@ If you use the *make* command, it can also be customized in a similar way:
 ```
 make MAXLOCI=YOUR_NUMBER_OF_LOCI MAXIND=YOUR_NUMBER_OF_IND gone
 ```
-The program has been tested on Arch Linux, Ubuntu 20.04 and Debian Buster, using g++ version 7.2.0 and above as a compiler.
 # Usage
 ```
 GONE2 - Genetic Optimization for Ne Esimation (v2.0 - Jan 2024)
@@ -111,3 +117,5 @@ EXAMPLES:
       a genotyping error rate of 0.001 across genomes are assumed.
           ./gone2 -g 3 -b 0.001 file.tped
 ```
+# Demo
+We have uploaded some sample data in the currentNe2 repo, which you can find [here](https://github.com/esrud/currentNe2)
