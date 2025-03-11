@@ -78,7 +78,7 @@ OPTIONS:
            assumes diploid unphased genotypes and can be used with any
            distribution of coverage within and between individuals.
     -x     The sample is considered to be a random set of individuals from
-           a metapopulation with two subpopulations of equal size.
+           a metapopulation with subpopulations of equal size.
     -b     Average base calling error rate per site (0 by default).
     -i     Number of individuals to use in the analysis (all by default)
     -s     Number of SNPs to use in the analysis (all by default)
