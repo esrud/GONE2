@@ -61,6 +61,7 @@ typedef struct{
   double d2spred[MAXBINS];
 }PopulationInfoMix;
 
+void diff(SampleInfo* s1, SampleInfo* s2);
 void CalculateFrequencies(PopulationInfo* popInfo, SampleInfo* sampleInfo);
 void CalculateF(SampleInfo* sampleInfo, PopulationInfo* popInfo);
 bool CalculateHeterozigosity(PopulationInfo* popInfo, SampleInfo* sampleInfo);
@@ -69,10 +70,21 @@ bool CalculateKinshipDistribution(PopulationInfo* popInfo,
 
 void CalculateD2Parallel(PopulationInfo* popInfo, SampleInfo* sampleInfo,
                  AppParams* params);
-void CalculateD2ParallelFst(std::string fichero,PopulationInfoMix* popInfoMix, PopulationInfo* popInfo, SampleInfo* sampleInfo,
-                 AppParams* params);
+//void CalculateD2ParallelFst(std::string fichero,PopulationInfoMix* popInfoMix, PopulationInfo* popInfo, SampleInfo* sampleInfo,
+ //                AppParams* params);
+void CalculateD2ParallelFst(
+  std::string fichero, PopulationInfoMix* popInfoMix,
+  PopulationInfo* popInfo, SampleInfo* sampleInfo,
+  AppParams* params);
 void CalculateD2GPU(PopulationInfo* popInfo, SampleInfo* sampleInfo,
                  AppParams* params);
-double MixEcuacion05(double Neini,double numIndi, double efe, int haplotype, double basecallcorrec, double Fst, double* m,double* xWt,double* Dw2,double* Db2,double* DbDw,double d2s05, double KK);                 
-double MixEcuacionlink(double maxdistance, double mindistance, int indmaxdistanceindx,double* mapdist,double Neini,double numIndi, double efe, int haplotype, double basecallcorrec, double Fst, double* m,double* xWt,double* Dw2,double* Db2,double* DbDw,double d2s05, double KK);                 
-double FixMixEcuacion05link(double numIndi, double efe, int haplotype, double basecallcorrec, double Fst, double* m, double* Wt,double* Dw2,double* Db2, double* DbDw, double cc,double* d2spred,double d2sobs, double KK);
+double FixMixEcuacion05link(int* ps,double* kk2,double* kk4,double numIndi, double efe, int haplotype, double basecallcorrec, double Fst, double* m, double* Wt,double* Dw2,double* Db2, double* DbDw, double cc,double* d2spred,double d2sobs, double KK);
+void CalculaOtros(double* mind2dif,double* m, double Fst, double Ne, int* nsubs,
+  double* Dw2,double* Db2, double* DbDw, double* d2spred2, int* ps,double* kk2,double* kk4, double* d2p05);
+void Mix05ylink(int* ps,double* kk2,double* kk4,double* d2slink, double* d2s05,double* mind2dif,
+  double* minNedif, double* minm, double* dw2, double* db2, double* dbdw,
+  double* d2spred2,double* d2spred1,double maxdistance,
+  double effeneind, double fp, 
+  double Fst, double* m, 
+  double* Dw2,double* Db2, double* DbDw,double* mapdist, double* Ne,double increFst);
+  

@@ -6,7 +6,7 @@
 #define MAXLOCI 2000000
 #endif
 #ifndef MAXIND
-#define MAXIND 1000
+#define MAXIND 2000
 #endif
 #define MAXCROMO 1000
 #define MAXBINS 2000

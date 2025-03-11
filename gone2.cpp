@@ -8,12 +8,11 @@
  * License: TBD
  */
 
+#include <cstring>
 #include <getopt.h>
 #include <math.h>
 #include <omp.h>
 #include <stdlib.h>
-#include <stdio.h>
-#include <time.h>
 
 #include <algorithm>
 #include <ctime>
@@ -25,7 +24,6 @@
 #include <string>
 
 #include "lib/population.hpp"
-#include "lib/constants.hpp"
 #include "lib/ped_map.hpp"
 #include "lib/tped.hpp"
 #include "lib/vcf.hpp"
@@ -33,7 +31,7 @@
 #include "lib/libgone.hpp"
 
 int main(int argc, char * argv[]) {
-  int j, i, j3;
+  int j, j3;
   double start, stop;
 
   std::random_device rd;
@@ -148,7 +146,6 @@ int main(int argc, char * argv[]) {
     for (j=ndips-1;j>=0;--j){
       sampleInfo->shuffledIndi[j*2]=sampleInfo->shuffledIndi[j]*2;
       sampleInfo->shuffledIndi[j*2+1]=sampleInfo->shuffledIndi[j*2]+1;
-//      std::cout << j*2 << " "<<sampleInfo->shuffledIndi[j*2]<<" "<<sampleInfo->shuffledIndi[j*2+1]<<std::endl;
     }
   }
 
@@ -172,13 +169,10 @@ int main(int argc, char * argv[]) {
     sampleInfo->numLoci = popInfo->numLoci;
   }
 
-  //std::cout << "Calculating frequencies" << std::endl;
   CalculateFrequencies(popInfo, sampleInfo);
 
-  //std::cout << "Calculating f" << std::endl;
   CalculateF(sampleInfo, popInfo);
 
-  //std::cout << "Calculating Heterozygosity" << std::endl;
   if ((params.haplotype == 0) || (params.haplotype == 2)){
     CalculateHeterozigosity(popInfo, sampleInfo);
   }
@@ -188,12 +182,11 @@ int main(int argc, char * argv[]) {
   // Progress: Phase 4
   params.progress.SetCurrentTask(0, "Measuring d²");
   params.progress.SaveProgress();
-  //params.progress.PrintProgress();
   if (!params.quiet) {
     std::cout << " Measuring d²" << std::endl;
   }
 
- CalculateD2Parallel(popInfo, sampleInfo, &params);
+  CalculateD2Parallel(popInfo, sampleInfo, &params);
  
   std::stringstream salida2;
   salida2
@@ -231,11 +224,42 @@ int main(int argc, char * argv[]) {
   //params.progress.PrintProgress();
 
   gone(&params, fichsal2, argc, argv, popInfo, sampleInfo);
-  std::remove(fichsal2.c_str()); // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
   if (params.mix){
     CalculateD2ParallelFst(params.fileOut,popInfoMix, popInfo, sampleInfo, &params);
-  }
+    
+    #ifdef EXPERIMENTAL_MIX
+    // vvvvvvvvvvvvvvvvvvvvvANADIDO PARA CALCULO ALGRoITMO GENETICO
+    if (!params.quiet) {
+      std::cout << " Recalculating Ne" << std::endl;
+    }
+    std::remove(fichsal2.c_str()); // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    std::stringstream salida3;
+    salida3
+        << params.haplotype
+        << "\t# Phase (0:unphased diploids; 1:haploids; 2:phased diploids; 3:low_coverage)\n";
+    salida3 << sampleInfo->numIndiEff
+            << "\t# Sample size (x2 in phased diploids)\n";
+    salida3 << sampleInfo->f << "\t# Hardy-Weinberg deviation in the sample\n";
+    salida3 << sampleInfo->binExtra << "\t# Numero de bins extras\n";
+    for (j3 = 0; j3 < sampleInfo->binMax; ++j3) {
+      if (sampleInfo->nxc[j3] != 0) {
+        salida3 << sampleInfo->nxc[j3] << "\t" << sampleInfo->xc[j3] << "\t"
+                << sampleInfo->d2[j3] << "\n";
+      }
+    }
+    std::ofstream outputFile3;
+    outputFile3.open(fichsal2);
+    outputFile3 << salida3.str();
+    outputFile3.close();
+    params.mix = false;
+    gone(&params, fichsal2, argc, argv, popInfo, sampleInfo);
+    // gone(&params, fichsal2, argc, argv, p2, s2);
+    params.mix = true;
+    // ^^^^^^^^^^^^^^^^^^^^^^FIN DE ANADIDO PARA CALCULO ALGoRITMO GENETICO
+    #endif
+    }
+  // Remove intermediate file
+  std::remove(fichsal2.c_str());
 
   stop = omp_get_wtime() - start;
   std::stringstream salida;
@@ -246,8 +270,52 @@ int main(int argc, char * argv[]) {
   }
   salida << "\n";
   salida << "# Running time:";
-  salida << (static_cast<float>(stop)) << "sec\n";
+  salida << static_cast<float>(stop) << "sec\n";
   salida << "#\n";
+
+  salida << "# PREPROCESSING INFORMATION:\n";
+  if (params.haplotype == 0){
+      salida << "# Temporal Ne estimation using unphased diploid data under the assumption of\n";
+  }
+  else if (params.haplotype == 1){
+      salida << "# Temporal Ne estimation using haploid data under the assumption of\n";
+  }
+  else if (params.haplotype == 2){
+      salida << "# Temporal Ne estimation using phased diploid data under the assumption of\n";
+  }
+  else if (params.haplotype == 3){
+      salida << "# Temporal Ne estimation using diploid low-coverage data under the assumption of\n";
+  }
+  if (params.mix){
+      salida << "#   a metapopulation model with panmixia within subpopulations.\n";
+  }
+  else{
+      salida << "#   a single population model with panmixia.\n";
+  }
+  if (params.cMMb > 0){
+      salida << "# The marker locations in a physical map are known and the chromosome sizes and the\n";
+      salida << "#   total genome size will be calculated using those locations. The physical map will be\n";
+      salida << "#   converted into a genetic map using a constant recombination rate across the genome: \n";
+      salida << "#   distances in Morgans will be calculated using the physical distances (in Mb).\n";
+      salida << "# Ne will be inferred using the recombination rates between loci and the weighted cuadratic\n";
+      salida << "#   correlations of alleles of loci pairs.\n";
+  } 
+  else{
+      salida << "# The marker locations in a genetic map are known and the chromosome sizes and \n";
+      salida << "#   the total genetic size will be calculated using those locations. The genetic \n";
+      salida << "#   distances (in Morgans) between loci pairs will be calculated directly using\n";
+      salida << "#   the locations in the genetic map.\n";
+      salida << "# Ne will be inferred using the recombination rates between loci and the weighted cuadratic\n";
+      salida << "#   correlations of alleles of loci pairs.\n";
+  }
+  if (params.mix){
+      salida << "# The historical Ne series will inferred by assuming that observed correlation between\n";
+      salida << "#   sites with recombination rate c reflects the Ne of 1/(2c) generations ago.\n#\n";
+  }
+  else{
+      salida << "# The complete theoretical model will be used to search for the historical Ne series\n";
+      salida << "#   that best fit the the observed correlations across bins of recomination.\n#\n";
+  }
   salida << "# INPUT PARAMETERS:\n";
   salida << "# Type of genotyping data. 0:unphased diploids, 1:haploids, 2:phased diploids, 3:pseudohaploids:\n";
   salida << std::fixed << std::setprecision(0);
@@ -310,30 +378,10 @@ int main(int argc, char * argv[]) {
   salida << "# Number of SNPs included in the analysis (only polymorphic and with less than 20% missing data):\n";
   salida << std::fixed << std::setprecision(0);
   salida << sampleInfo->numSegLoci << "\n";
-  // // Añadido por Enrique. Creo que estaba en la versión anterior:
-  // salida << "# Number of SNPs pairs included in the analysis:\n";
-  // salida << std::fixed << std::setprecision(0);
-  // salida << sampleInfo->numSNPs << "\n";  
-  // salida << "# Expected number of raw data (= individuals x SNPs pairs):\n";  // DIFIERE DEL preGONE
-  // if (sampleInfo->haplotype == 2){
-  //   salida << popInfo->expNData/2 <<"\n";
-  // }
-  // else{
-  //   salida << popInfo->expNData <<"\n";
-  // }
-  // salida << "# Effective number of raw data (may differ from the above one "  // DIFIERE DEL preGONE
-  //           "due to missing genotypes:\n";
-  // if (sampleInfo->haplotype == 2){
-  //   salida << popInfo->effNData/2 <<"\n";
-  // }
-  // else{
-  //   salida << popInfo->effNData <<"\n";
-  // }
   salida << std::fixed << std::setprecision(8);
   salida << "# Proportion of missing data:\n";  // DIFIERE DEL preGONE como consecuencia de los dos anteriores
   salida << popInfo->propMiss << "\n";
   salida << "#\n";
-  // salida << "# OUTPUT PARAMETERS:\n";
 
   if ((params.haplotype == 0) || (params.haplotype == 2)){
     salida << "# Estimated Fis value of the population (deviation from H-W "
@@ -343,8 +391,6 @@ int main(int argc, char * argv[]) {
     salida << sampleInfo->hetAvg<< "\n";
     salida << "# Heterozygosity observed in the sample (all sites):\n";
     salida << sampleInfo->hetAvgAll<< "\n";
-    // salida << "# Average coefficient of relationship between individuals in the
-    // sample:\n"; salida << Parent_med<<"\n";
   }
   salida << "# Heterozygosity expected (H-W eq.) in the sample (only polymorphic sites):\n";
   salida << sampleInfo->hetEsp<< "\n";
@@ -362,8 +408,6 @@ int main(int argc, char * argv[]) {
       outputFile.close();
     }
   }
-
-
 
   delete sampleInfo;
   delete popInfo;

@@ -1,7 +1,128 @@
 
 #include "sample.hpp"
-#include "./pool.hpp"
+#include "pool.hpp"
+#include <iomanip>
+#include <ios>
 #include <string.h>
+
+void diff(SampleInfo *s1, SampleInfo *s2) {
+  /*
+   * Helper function to diff two SampleInfo structs
+  */
+  
+  if (s1->haplotype != s2->haplotype) {
+    std::cout << "Haplotype: " << s1->haplotype << " " << s2->haplotype << std::endl;
+  }
+  if (s1->mix != s2->mix) {
+    std::cout << "Mix: " << s1->mix << " " << s2->mix << std::endl;
+  }
+  if (s1->sampleSizeIndi != s2->sampleSizeIndi) {
+    std::cout << "SampleSizeIndi: " << s1->sampleSizeIndi << " " << s2->sampleSizeIndi << std::endl;
+  }
+  if (s1->numLoci != s2->numLoci) {
+    std::cout << "NumLoci: " << s1->numLoci << " " << s2->numLoci << std::endl;
+  }
+  if (s1->numSegLoci != s2->numSegLoci) {
+    std::cout << "NumSegLoci: " << s1->numSegLoci << " " << s2->numSegLoci << std::endl;
+  }
+  if (s1->numSNPs != s2->numSNPs) {
+    std::cout << "NumSNPs: " << s1->numSNPs << " " << s2->numSNPs << std::endl;
+  }
+  if (s1->binMax != s2->binMax) {
+    std::cout << "binMax: " << s1->binMax << " " << s2->binMax << std::endl;
+  }
+  if (s1->numIndiEff != s2->numIndiEff) {
+    std::cout << "NumIndiEff: " << s1->numIndiEff << " " << s2->numIndiEff << std::endl;
+  }
+  if (s1->increW != s2->increW) {
+    std::cout << "IncreW: " << s1->increW << " " << s2->increW << std::endl;
+  }
+  if (s1->f != s2->f) {
+    std::cout << "f: " << s1->f << " " << s2->f << std::endl;
+  }
+  if (s1->hetpq != s2->hetpq) {
+    std::cout << "Hetpq: " << s1->hetpq << " " << s2->hetpq << std::endl;
+  }
+  if (s1->hetAvg != s2->hetAvg) {
+    std::cout << "HetAvg: " << s1->hetAvg << " " << s2->hetAvg << std::endl;
+  }
+  if (s1->hetEspAll != s2->hetEspAll) {
+    std::cout << "HetEspAll: " << s1->hetEspAll << " " << s2->hetEspAll << std::endl;
+  }
+  if (s1->hetEsp != s2->hetEsp) {
+    std::cout << "HetEsp: " << s1->hetEsp << " " << s2->hetEsp << std::endl;
+  }
+  if (s1->hetAvgAll != s2->hetAvgAll) {
+    std::cout << "HetAvgAll: " << s1->hetAvgAll << " " << s2->hetAvgAll << std::endl;
+  }
+  if (s1->hetVar != s2->hetVar) {
+    std::cout << "HetVar: " << s1->hetVar << " " << s2->hetVar << std::endl;
+  }
+  if (s1->hetSesg != s2->hetSesg) {
+    std::cout << "HetSesg: " << s1->hetSesg << " " << s2->hetSesg << std::endl;
+  }
+  if (s1->parentAvg != s2->parentAvg) {
+    std::cout << "ParentAvg: " << s1->parentAvg << " " << s2->parentAvg << std::endl;
+  }
+  
+  bool flag_frec = false;
+  bool flag_homo = false;
+  bool flag_segrega = false;
+  bool flag_shufLoci = false;
+  for (size_t i = 0; i < MAXLOCI; ++i) {
+    if (!flag_frec && s1->frec[i] != s2->frec[i]) {
+      std::cout << "Frec is different" << std::endl;
+      flag_frec = true;
+    }
+    if (!flag_homo && s1->homo[i] != s2->homo[i]) {
+      std::cout << "Homo is different" << std::endl;
+      flag_homo = true;
+    }
+    if (!flag_segrega && s1->segrega[i] != s2->segrega[i]) {
+      std::cout << "Segrega is different" << std::endl;
+      flag_segrega = true;
+    }
+    if (!flag_shufLoci && s1->shuffledLoci[i] != s2->shuffledLoci[i]) {
+      std::cout << "ShuffledLoci is different" << std::endl;
+      flag_shufLoci = true;
+    }
+  }
+  bool flag_het = false;
+  bool flag_parent = false;
+  bool flag_shufIndi = false;
+  for (size_t i = 0; i < MAXIND; ++i) {
+    if (!flag_het && s1->het[i] != s2->het[i]) {
+      std::cout << "Het is different" << std::endl;
+      flag_het = true;
+    }
+    if (!flag_parent && s1->parent[i] != s2->parent[i]) {
+      std::cout << "Parent is different" << std::endl;
+      flag_parent = true;
+    }
+    if (!flag_shufIndi && s1->shuffledIndi[i] != s2->shuffledIndi[i]) {
+      std::cout << "ShuffledIndi is different" << std::endl;
+      flag_shufIndi = true;
+    }
+  }
+
+  bool flag_nxc = false;
+  bool flag_xc = false;
+  bool flag_d2 = false;
+  for (size_t i = 0; i < MAXBINS; ++i) {
+    if (!flag_nxc && s1->nxc[i] != s2->nxc[i]) {
+      std::cout << "Nxc is different" << std::endl;
+      flag_nxc = true;
+    }
+    if (!flag_xc && s1->xc[i] != s2->xc[i]) {
+      std::cout << "xc is different" << std::endl;
+      flag_xc = true;
+    }
+    if (!flag_d2 && s1->d2[i] != s2->d2[i]) {
+      std::cout << "d2 is different" << std::endl;
+      flag_d2 = true;
+    }
+  }
+}
 
 void CalculateFrequencies(PopulationInfo* popInfo, SampleInfo* sampleInfo) {
   // Calculo de frecuencia del alelo noref y de homo noref para todos los loci
@@ -62,7 +183,6 @@ void CalculateFrequencies(PopulationInfo* popInfo, SampleInfo* sampleInfo) {
       std::cerr << "There is no genotyping data for at least one SNP\n";
       exit(EXIT_FAILURE);
     }
-//    if ((sampleInfo->frec[locus] > 0) && (sampleInfo->frec[locus] < contaIndX)) {
     if ((sampleInfo->frec[locus] > 0) && (contaIndX>=mincontaIndX) && (sampleInfo->frec[locus] < contaIndX)) { // excluded SNPs with > 20% of missing data
       ++sampleInfo->numSegLoci;
       sampleInfo->segrega[locus] = true;
@@ -114,41 +234,6 @@ bool CalculateHeterozigosity(PopulationInfo* popInfo, SampleInfo* sampleInfo) {
     int i, j;
     bool isSegLocus;
     uint8_t ff,gg;
-
-    // double a, sx2 = 0, sx3 = 0;
-    // sampleInfo->hetAvg = 0;
-    // for (i = 0; i < sampleInfo->sampleSizeIndi; ++i) {
-    //   sampleInfo->het[*pIndi] = 0;
-    //   pLocus = sampleInfo->shuffledLoci;
-    //   contaLocX = 0;
-    //   for (j = 0; j < sampleInfo->numSegLoci; ++j) {
-    //     isSegLocus = false;
-    //     while (!isSegLocus) {
-    //       if (sampleInfo->segrega[*pLocus]) {
-    //         ff = popInfo->indi[*pIndi][*pLocus];
-    //         if (ff == 1) {
-    //           // acumulador de heterocigosidad de cada indiv
-    //           ++sampleInfo->het[*pIndi];
-    //           ++contaLocX;
-    //         } else if (ff < 9) {
-    //           ++contaLocX;
-    //         }
-    //         isSegLocus = true;
-    //       }
-    //       ++pLocus;
-    //     }
-    //   }
-    //   if (contaLocX == 0) {
-    //     std::cerr << "There is no genotyping data for at least one individual"
-    //               << std::endl;
-    //     delete popInfo;
-    //     delete sampleInfo;
-    //     return false;
-    //   }
-    //   sampleInfo->het[*pIndi] /= contaLocX;  // het de cada individuo
-    //   sampleInfo->hetAvg += sampleInfo->het[*pIndi];
-    //   ++pIndi;
-    // }
 
     if (popInfo->haplotype ==0){
       sampleInfo->hetAvg = 0;
@@ -230,22 +315,6 @@ bool CalculateHeterozigosity(PopulationInfo* popInfo, SampleInfo* sampleInfo) {
       popInfo->hetAvgAll = sampleInfo->hetAvgAll;
     }
 
-
-    // pIndi = sampleInfo->shuffledIndi;
-    // for (i = 0; i < sampleInfo->sampleSizeIndi; ++i) {
-    //   // het individual dividida por het media total
-    //   sampleInfo->het[*pIndi] /= sampleInfo->hetAvg;
-
-    //   a = sampleInfo->het[*pIndi] - 1.0;
-    //   sx2 += Square<double>(a);
-    //   sx3 += Cube<double>(a);
-
-    //   ++pIndi;
-    // }
-    // sampleInfo->hetVar = sx2 / (sampleInfo->sampleSizeIndi - 1);
-    // sampleInfo->hetSesg  = sx3 / sampleInfo->sampleSizeIndi;
-    // double hetDT = sqrt(sampleInfo->hetVar);
-    // sampleInfo->hetSesg /= Cube<double>(hetDT);
     return true;
 }
 
@@ -325,8 +394,7 @@ void CalculateD2Parallel(PopulationInfo* popInfo, SampleInfo* sampleInfo,
   double epsilon=0;
   double iota=0;
   double kappa=0;
-  double lambda=1;
-  double desde,hasta;
+  double desde;
   int genot1,genot2;
   bool okchromsize;
 
@@ -344,8 +412,8 @@ void CalculateD2Parallel(PopulationInfo* popInfo, SampleInfo* sampleInfo,
   }
 
   gBase = 1.0 / (2.0 * params->hc);
-// gBase = std::max((1.0 / (2.0 * params->hc)), 1.0);
-//  binBase = trunc((gBase - 10.0) / 5.0) + 6.0;
+  // gBase = std::max((1.0 / (2.0 * params->hc)), 1.0);
+  //  binBase = trunc((gBase - 10.0) / 5.0) + 6.0;
 
   if (params->cMMb > 0) {
     for (i = 0; i < popInfo->numLoci; ++i) {
@@ -464,8 +532,7 @@ void CalculateD2Parallel(PopulationInfo* popInfo, SampleInfo* sampleInfo,
   if (sampleInfo->haplotype==3){
     repes=10;
   }
-//  std::cout<<"Inds: "<<sampleInfo->sampleSizeIndi<<std::endl;
-#pragma omp parallel for private(D, W, D2, W2, recrate, generacion, bin, extrabin,i, j, _i, genot1, genot2, locus1, locus2, tacuHoHo, tacuHoHetHetHo, tacuHetHet, pIndi, cenmor, contaIndX, frecI, frecJ, ss,_irepe) schedule(dynamic, 1000)
+  #pragma omp parallel for private(D, W, D2, W2, recrate, generacion, bin, extrabin,i, j, _i, genot1, genot2, locus1, locus2, tacuHoHo, tacuHoHetHetHo, tacuHetHet, pIndi, cenmor, contaIndX, frecI, frecJ, ss,_irepe) schedule(dynamic, 1000)
   for (i = 0; i < sampleInfo->numSegLoci - 1; ++i) {
     int tid = omp_get_thread_num();
     locus1 = valid_idx[i];
@@ -528,7 +595,6 @@ void CalculateD2Parallel(PopulationInfo* popInfo, SampleInfo* sampleInfo,
           }
           ss = genot1 + genot2;
           if (_irepe==0){threadExpNCounter++;}
-          //++texpNData[tid];
           cond = (ss < 9);
           contaIndX += cond;
           frecI += genot1 * cond;
@@ -586,7 +652,6 @@ void CalculateD2Parallel(PopulationInfo* popInfo, SampleInfo* sampleInfo,
       //teffNData[tid] += contaIndX;
       tnxc[tid][bin] += 1;
       txc[tid][bin] += 1/recrate; // Para calcular media harmonica
-//      txc[tid][bin] += recrate; // Para calcular media Aritmetica
       txD2[tid][bin] += D2;
       txW[tid][bin] += W2;
     }
@@ -615,12 +680,6 @@ void CalculateD2Parallel(PopulationInfo* popInfo, SampleInfo* sampleInfo,
 
   sampleInfo->binExtra= increbinBase;
   refextra=nxc[increbinBase]; // Elimina los bines extras con pocos datos
-  // std::cout <<"refextra "<<refextra<<std::endl;
-  // for (j=0;j<sampleInfo->binMax;++j){
-  //   if (nxc[j] > 0) {
-  //     std::cout <<  std::setprecision(5)<<"j: "<<j<<"  nxc: "<<nxc[j]<<"  xc: "<<1/(xc[j]/nxc[j])<<"  d2: "<<xD2[j]/xW[j]<<std::endl;
-  //   }
-  // }
 
   for (i=increbinBase-1; i>=0; --i){
       if (nxc[i]<refextra*(3-i) * 0.6){
@@ -671,19 +730,7 @@ void CalculateD2Parallel(PopulationInfo* popInfo, SampleInfo* sampleInfo,
       }
     }
   }
-  // if (params->coverage>0){
-  //   XXW/=XXn;
-  //   lambda = pow((1+pow(0.5,params->coverage-1)),2);
-  //   sampleInfo->increW=XXW*(1-1/lambda);
-  //   iota = (1-2/(2* sampleInfo->numIndiEff +1));
-  //   kappa = 1/(sampleInfo->numIndiEff +1);
-  //   for (j = 0; j <= sampleInfo->binMax; ++j) {
-  //     if (nxc[j] > 0) {
-  //       sampleInfo->d2[j] = (xD2[j]/nxc[j]-sampleInfo->increW*kappa) / \
-  //                           (xW[j]/nxc[j]-sampleInfo->increW*iota);
-  //     }
-  //   }
-  // }
+
   if (popInfo->haplotype==0){
     popInfo->f =
       (1.0 + sampleInfo->f * (2.0 * popInfo->avgNumIndiAnalyzed - 1.0)) /
@@ -694,10 +741,6 @@ void CalculateD2Parallel(PopulationInfo* popInfo, SampleInfo* sampleInfo,
      (1.0 + sampleInfo->f * (popInfo->avgNumIndiAnalyzed - 1.0)) /
       (popInfo->avgNumIndiAnalyzed - 1.0 + sampleInfo->f);
   }
-
-  // std::cout<<sampleInfo->f<<std::endl;
-  // std::cout<<popInfo->avgNumIndiAnalyzed<<std::endl;
-  // std::cout<<popInfo->f<<std::endl;
 
   // Free the rest of the memory
   delete[] tnxc;
@@ -710,28 +753,27 @@ void CalculateD2Parallel(PopulationInfo* popInfo, SampleInfo* sampleInfo,
   delete[] valid_idx;
 }
 
-void CalculateD2ParallelFst(std::string fichero,PopulationInfoMix* popInfoMix, PopulationInfo* popInfo, SampleInfo* sampleInfo,
-                 AppParams* params) {
+void CalculateD2ParallelFst(
+  std::string fichero, PopulationInfoMix* popInfoMix,
+  PopulationInfo* popInfo, SampleInfo* sampleInfo,
+  AppParams* params) {
   // Calculo de D2:
 
   int* valid_idx = new int[popInfo->numLoci];
   int counter = 0;
   int i, j;
   int _i, _irepe;
-  double gBase;
-  // double xlc = 0, xhc = 0;
-  long int refextra;
-  // double infx, supx;
-  int bin, extrabin;
-  double epsilon=0;
-  double iota=0;
-  double kappa=0;
-  double lambda=1;
-  double desde,hasta;
+  int bin;
+  double desde;
   int genot1,genot2;
   bool okchromsize;
   double Dw2, Db2, DbDw;
   double Fst;
+  double mind2dif, minm, Nemejor, minmmejor;
+  double dw2,db2,dbdw;
+  double d2spred1, d2spred2;
+  int nsubs;
+  bool flag_noconverge=false;
 
   params->progress.InitCurrentTask(sampleInfo->numSegLoci - 1);
 
@@ -771,10 +813,6 @@ void CalculateD2ParallelFst(std::string fichero,PopulationInfoMix* popInfoMix, P
   if (!okchromsize){
     exit(EXIT_FAILURE);
   }
-  // xlc = -log(1.0 - 2.0 * 0.20) / 2.0; //  desde c=0.20
-  // xhc = -log(1.0 - 2.0 * 0.25) / 2.0; // hasta c=0.25
-  // infx = xlc * 100.0;  // en cM
-  // supx = xhc * 100.0;  // en cM
 
   double mapdist[MAXDIST] = {0};
   double increcM = 0.01;
@@ -789,7 +827,6 @@ void CalculateD2ParallelFst(std::string fichero,PopulationInfoMix* popInfoMix, P
   uint8_t ss;
 
   double D, W,D2,W2;
-  double recrate, generacion;
 
   int numThreads = params->numThreads;
   if (numThreads == 0) {
@@ -798,7 +835,6 @@ void CalculateD2ParallelFst(std::string fichero,PopulationInfoMix* popInfoMix, P
 
   double xW[2] = {0}, xD2[2] = {0};
   long int nxc[2] = {0};
-  double xc[2] = {0};
 
   // Per thread accumulators
   double** txW  = new double*[numThreads];
@@ -819,15 +855,13 @@ void CalculateD2ParallelFst(std::string fichero,PopulationInfoMix* popInfoMix, P
 
   double expNData = 0;
   double effNData = 0;
-  int increbinBase;
 
   omp_set_num_threads(numThreads);
   double frecI, frecJ;
   std::sort(valid_idx, valid_idx + sampleInfo->numSegLoci);
   // sampleInfo->numSNPs = 0;
   int repes=1;
-  //  std::cout<<"Inds: "<<sampleInfo->sampleSizeIndi<<std::endl;
-  #pragma omp parallel for private(D, W, D2, W2, recrate, generacion, bin, extrabin,i, j, _i, genot1, genot2, locus1, locus2, tacuHoHo, tacuHoHetHetHo, tacuHetHet, pIndi, cenmor, contaIndX, frecI, frecJ, ss,_irepe) schedule(dynamic, 1000)
+  #pragma omp parallel for private(D, W, D2, W2, bin, i, j, _i, genot1, genot2, locus1, locus2, tacuHoHo, tacuHoHetHetHo, tacuHetHet, pIndi, cenmor, contaIndX, frecI, frecJ, ss,_irepe) schedule(dynamic, 1000)
   for (i = 0; i < sampleInfo->numSegLoci - 1; ++i) {
     int tid = omp_get_thread_num();
     locus1 = valid_idx[i];
@@ -911,23 +945,14 @@ void CalculateD2ParallelFst(std::string fichero,PopulationInfoMix* popInfoMix, P
           D2+=D;
           W2+=W;
         }
-      }
-      D2/=repes;
-      W2/=repes;
-      // if (bin == 1) {
-      //   recrate = (1.0 - exp(-0.02 * cenmor)) / 2.0;
-      // } 
-      // else{
-      //   recrate=0.5;
-      // }
+        D2/=repes;
+        W2/=repes;
 
-      threadEffNCounter += contaIndX;
-      //teffNData[tid] += contaIndX;
-      tnxc[tid][bin] += 1;
-      // txc[tid][bin] += 1/recrate; // Para calcular media harmonica
-      //      txc[tid][bin] += recrate; // Para calcular media aritmetica
-      txD2[tid][bin] += D2;
-      txW[tid][bin] += W2;
+        threadEffNCounter += contaIndX;
+        tnxc[tid][bin] += 1;
+        txD2[tid][bin] += D2;
+        txW[tid][bin] += W2;
+      }
     }
     teffNData[tid] += threadEffNCounter;
     texpNData[tid] += threadExpNCounter;
@@ -940,7 +965,6 @@ void CalculateD2ParallelFst(std::string fichero,PopulationInfoMix* popInfoMix, P
   for (int nThread = 0; nThread < numThreads; ++nThread) {
     for (int nBin = 0; nBin <= 1; ++nBin) {
       nxc[nBin] += tnxc[nThread][nBin];
-      // xc[nBin]  += txc[nThread][nBin];
       xD2[nBin] += txD2[nThread][nBin];
       xW[nBin]  += txW[nThread][nBin];
     }
@@ -948,20 +972,17 @@ void CalculateD2ParallelFst(std::string fichero,PopulationInfoMix* popInfoMix, P
     expNData += texpNData[nThread];
   }
   double numIndi = sampleInfo->sampleSizeIndi * effNData / expNData;
+  double effeneind = numIndi;
   
-
   double xWt = (xW[0]+xW[1])/(nxc[0]+nxc[1]);
   for (j = 0; j <= 1; ++j) {
     if (nxc[j] > 0) {
-      // xc[j] /= nxc[j];
-      // xc[j] = 1 / xc[j]; // media harmonica
       xW[j] /= nxc[j];
       xD2[j] /= nxc[j];
     }
   }
 
   // Calculo de la distribución de distancias para la integral:
-  double mindistance=5/100; // No se consideran las parejas más próximas de 5 cM <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
   double contadist=0;
   double maxdistance=0;
@@ -992,6 +1013,7 @@ void CalculateD2ParallelFst(std::string fichero,PopulationInfoMix* popInfoMix, P
       xWt /= (1-2/(numIndi+1));
   }
 
+
   double d2s05 = xD2[0]/xW[0];
   double d2slink = xD2[1]/xW[1];
   double fp =popInfo->f;
@@ -1004,7 +1026,7 @@ void CalculateD2ParallelFst(std::string fichero,PopulationInfoMix* popInfoMix, P
   samplex /= ((sample_size_h - 1.0) * (sample_size_h - 1.0) * (sample_size_h - 1.0) + (sample_size_h - 1.0) * (sample_size_h - 1.0));
   double sampley = (2.0 * sample_size_h - 4.0) / ((sample_size_h - 1.0) * (sample_size_h - 1.0));
 
-  double d2;
+  double d2 = 0;
   switch (sampleInfo->haplotype){
     case 0:
       d2= (d2s05 - sampley * fp12) / samplex;
@@ -1020,98 +1042,175 @@ void CalculateD2ParallelFst(std::string fichero,PopulationInfoMix* popInfoMix, P
       break;
   }
 
-  // std::cout<< std::setprecision(11);
-  // std::cout <<d2s05<<"  "<< d2slink<< std::endl;
-
-  if (d2>0){
+  if ((d2>0) && (d2slink>d2s05)){
     // first, find the maximum possible value of Fst
-    Fst = std::sqrt(d2);
-    double Ne=10E9;
-    double Ne05=10E9, Nelink=10E9;
-    double Ne05ant=10E9;
-    double Nelinkant=10E9;
+    int ps=2;
+    double m;
+    double Ne, NeT;
     double KK=0;
-    double increFst = Fst;
+    double increFst;
+    double maxFst;
+    double minFst;
+    double d2p05;
+    double m2, m3;
+    double Fst2, Fst3;
+    double Ne2, Ne3;
+    double ps2, ps3;
+    double minNedif;
+    double d2b05= (d2s05 - sampley * fp12) / samplex / 4; // el 4 es por ser unphased
+    double kk1=float(ps)/(float(ps)-1);
+    double kk2=kk1*kk1;
+    double kk4=kk2*kk2;
 
-    for (i=0;i<5;++i){
-        increFst /= 10;
-        while ((Ne05-Nelink)<=0){
-            if (Fst<increFst){break;}
-            Ne05ant=Ne05;
-            Nelinkant=Nelink;
-            Fst-=increFst;
-            Ne05 = MixEcuacion05(Ne05, numIndi, popInfo->f, popInfo->haplotype, popInfo->basecallcorrec, Fst, &popInfo->m, &xWt,&Dw2,&Db2,&DbDw,d2s05, KK);
-            Nelink = MixEcuacionlink(maxdistance,mindistance,maxdistanceindx,&mapdist[0],Nelink, numIndi, popInfo->f, popInfo->haplotype, popInfo->basecallcorrec, Fst, &popInfo->m, &xWt,&Dw2,&Db2,&DbDw,d2slink, KK);
-            if ((Ne05-Nelink)>0){
-                Fst+=increFst;
-                Ne05=Ne05ant;
-                Nelink=Nelinkant;
-                break;
+    if (d2b05>0){
+      for (int repe=0;repe<3;++repe){
+        int CIEN=100;
+        minFst=0;
+        maxFst=std::sqrt(d2b05*(ps-1));
+        if (maxFst>0.9){maxFst=0.9;}
+        increFst=(maxFst-minFst)/CIEN;
+        double Fstmejor=999999999,difmejor=999999999;
+        for (int ii=0;ii<2;++ii){
+          Fst=minFst;
+          while (Fst<maxFst){
+            Fst+=increFst;
+            Mix05ylink(&ps,&kk2,&kk4,&d2slink,&d2s05,&mind2dif,
+              &minNedif,&minm, &dw2, &db2, &dbdw,
+              &d2spred2,&d2spred1,maxdistance,
+              effeneind, fp, 
+              Fst, &m, 
+              &Dw2,&Db2, &DbDw,&mapdist[0], &Ne,increFst);
+
+            if((Ne<999999999) && (mind2dif<difmejor) && (minm<0.45) && (minm>0)){
+              difmejor=mind2dif;
+              Nemejor=Ne;
+              minmmejor=minm;
+              Fstmejor=Fst;
             }
+          }
+          if (Fstmejor<1){
+            minFst=Fstmejor-increFst;
+            maxFst=Fstmejor+increFst;
+            increFst=(maxFst-minFst)/CIEN;
+          }
+          else{
+            break;
+          }
         }
-    }
-    Fst-=increFst;
-    Ne05 = MixEcuacion05(Ne05, numIndi, popInfo->f, popInfo->haplotype, popInfo->basecallcorrec, Fst, &popInfo->m, &xWt,&Dw2,&Db2,&DbDw,d2s05, KK);
-    Nelink = MixEcuacionlink(maxdistance,mindistance,maxdistanceindx,&mapdist[0],Nelink, numIndi, popInfo->f, popInfo->haplotype, popInfo->basecallcorrec, Fst, &popInfo->m, &xWt,&Dw2,&Db2,&DbDw,d2slink, KK);
-    double difmax=Ne05-Nelink;
-    double maxFst=Fst;
+        if (Fstmejor<1){ // Si Fst valido
+          Fst=Fstmejor;
+          Ne=(Nemejor);
+          NeT=Ne*ps;
+          // FORMULA ABREVIADA:
+          m= (1-Fst)/(4*Ne*Fst*pow((float(ps)/float(ps-1)),2));
+          // FORMULA COMPLETA:
+          // m = (1-pow(1-1/(2*ps/(ps-1)*Ne)*(1-Fst)/Fst,0.5))/(ps/(ps-1));
+          m2=m;
+          Fst2=Fst;
+          Ne2=Ne;
+          ps2=ps;
 
-  // std::cout<< std::setprecision(11);
-  // std::cout <<popInfo->f<<"  "<<Fst<<"  "<< Ne05<<"  "<< Nelink<< std::endl;
+          double paramssanterior=ps;
+          if (repe<2){ // Nueva busqueda si es la primera o segunda pasada
+            CIEN=100;
+            d2p05=(d2s05-sampley*fp12)/samplex;
+            double Fis,lowestFis=999999999;
+            bool nopase=true;
 
-    // then, search for the minimum possible value of Fst
-    double minFst=0;
-    double difmin=0;
-    Fst = 0;
-    minFst=Fst;
-    Ne05 = MixEcuacion05(Ne05, numIndi, popInfo->f, popInfo->haplotype, popInfo->basecallcorrec, Fst, &popInfo->m, &xWt,&Dw2,&Db2,&DbDw,d2s05, KK);
-    Nelink = MixEcuacionlink(maxdistance,mindistance,maxdistanceindx,&mapdist[0],Nelink, numIndi, popInfo->f, popInfo->haplotype, popInfo->basecallcorrec, Fst, &popInfo->m, &xWt,&Dw2,&Db2,&DbDw,d2slink, KK);
-    difmin=Ne05-Nelink;
-
-  // std::cout<< std::setprecision(11);
-  //  std::cout <<popInfo->f<<"  "<<Fst<<"  "<< Ne05<<"  "<< Nelink<< std::endl;
-
-    //  if ((difmin*difmax)<0){
-    if (difmax>0){
-      if (difmin<0){
-        // Next, search for the confluence of the two estimates of Ne
-        increFst =(maxFst-minFst)/10;
-        Fst=maxFst;
-        Ne05 = MixEcuacion05(Ne05, numIndi, popInfo->f, popInfo->haplotype, popInfo->basecallcorrec, Fst, &popInfo->m, &xWt,&Dw2,&Db2,&DbDw,d2s05, KK);
-        Nelink = MixEcuacionlink(maxdistance,mindistance,maxdistanceindx,&mapdist[0],Nelink, numIndi, popInfo->f, popInfo->haplotype, popInfo->basecallcorrec, Fst, &popInfo->m, &xWt,&Dw2,&Db2,&DbDw,d2slink, KK);
-        int signo=-1;
-        double dif=(Ne05-Nelink);
-        int countchanges=0;
-        while (countchanges<10){
-            // Check for valid Fst
-            while ((dif*signo<0)){
-                Fst +=increFst*signo; // reset the previous value
-                if (Fst>maxFst){Fst=maxFst;}
-                if (Fst<minFst){Fst=minFst;}
-                Ne05 = MixEcuacion05(Ne05, numIndi, popInfo->f, popInfo->haplotype, popInfo->basecallcorrec, Fst, &popInfo->m, &xWt,&Dw2,&Db2,&DbDw,d2s05, KK);
-                Nelink = MixEcuacionlink(maxdistance,mindistance,maxdistanceindx,&mapdist[0],Nelink, numIndi, popInfo->f, popInfo->haplotype, popInfo->basecallcorrec, Fst, &popInfo->m, &xWt,&Dw2,&Db2,&DbDw,d2slink, KK);
-                dif=Ne05-Nelink;
-                // std::cout << signo<<"  "<< Fst<<"  "<<minFst<<"  "<<maxFst<<"  "<<Ne05<<"  "<< Nelink<< std::endl;
+            for (nsubs=2;nsubs<101;++nsubs){
+              Ne=NeT/nsubs;
+              if (Ne>5){
+                Fstmejor=999999999;
+                double mind2difant=999999999;
+                minFst=0;
+                maxFst=std::sqrt(d2b05*(nsubs-1));
+                if (maxFst>0.9){maxFst=0.9;}
+                increFst=(maxFst-minFst)/CIEN;
+                for (int ii=0;ii<2;++ii){
+                  Fst=minFst;
+                  while (Fst<maxFst){
+                      Fst+=increFst;
+                      CalculaOtros(&mind2dif,&m, Fst, Ne, &nsubs,
+                        &Dw2,&Db2, &DbDw, &d2spred2, &ps, &kk2,&kk4, &d2p05);
+                      if (mind2dif<1){
+                        if (mind2dif<mind2difant){
+                          minmmejor=m;
+                          mind2difant=mind2dif;
+                          Fstmejor=Fst;
+                          // mejord2spred2=d2spred2;
+                          // mejord2spred1=d2spred1;
+                        }
+                      }
+                    }
+                  if (Fstmejor<1){
+                    minFst=Fstmejor-increFst;
+                    maxFst=Fstmejor+increFst;
+                    increFst=(maxFst-minFst)/CIEN;
+                  }
+                  else{
+                    break;
+                  }
+                }
+                Fis=1-(1-fp)/(1-Fstmejor);
+                if ((Fstmejor<1) && (Fstmejor>0) && (minmmejor>0) && (minmmejor<0.5)){
+                  if (lowestFis<std::abs(Fis)){
+                    if (nopase){
+                      nopase=false;
+                      ps=nsubs-1;
+                      break;
+                    }
+                  }
+                  else{
+                    lowestFis=std::abs(Fis);
+                  }
+                }
+              }
             }
-            signo=-signo;
-            ++countchanges;
-            increFst/=10;
+
+            if(paramssanterior==ps){ // Stop si la salida de la nueva busqueda no cambia.
+              break;
+            }
+          }
         }
-        popInfo->Fst = Fst;
-        popInfo->m = (1-Fst)/(16*Nelink*Fst);
-
-  // std::cout<< std::setprecision(11);
-  // std::cout <<popInfo->f<<"  "<<Fst<<"  "<< Ne05<<"  "<< Nelink<< std::endl;
-
+        else{
+          flag_noconverge=true;
+        }
+        if (repe==0){ // Si no converge a la primera, sale
+          if (flag_noconverge){
+          std::cerr  << "  There is no convergence to a solution within the range of Fst values from 0 to 1.\n";
+          std::cerr << "\n";
+          exit(EXIT_FAILURE);
+          }
+        }
+        if (repe<2){
+          if (!flag_noconverge){ // guarda salida en el buffer salida3 si converge
+            m3=m2;
+            Fst3=Fst2;
+            Ne3=Ne2;
+            ps3=ps2;
+          }
+        }
+        if ((ps==2) || (flag_noconverge)){ // recupera buffer anterior y sale
+          m2=m3;
+          Fst2=Fst3;
+          Ne2=Ne3;
+          ps2=ps3;
+          break;
+        }
       }
-      else{
-        popInfo->Fst = Fst =0;
-        popInfo->m=0.5;
-      }
+
+      m=m2;
+      Fst=Fst2;
+      Ne=Ne2;
+      ps=ps2;
+
+      popInfo->m=m;
+      popInfo->Fst=Fst;
+
       double d2spred=0;
-      Ne = FixMixEcuacion05link(numIndi, popInfo->f, popInfo->haplotype, popInfo->basecallcorrec, Fst,&popInfo->m,&xWt,&Dw2,&Db2,&DbDw,0.5,&d2spred,d2s05, KK);
+      Ne = FixMixEcuacion05link(&ps,&kk2,&kk4,numIndi, popInfo->f, popInfo->haplotype, popInfo->basecallcorrec, Fst,&popInfo->m,&xWt,&Dw2,&Db2,&DbDw,0.5,&d2spred,d2s05, KK);
       popInfoMix->xc[0]=0.5;
-      popInfoMix->Nelink[0]=2*Ne;
+      popInfoMix->Nelink[0]=ps*Ne;
       popInfoMix->mig[0]=popInfo->m;
       popInfoMix->Fst[0]=popInfo->Fst;
       popInfoMix->Dw2[0]=Dw2;
@@ -1125,51 +1224,83 @@ void CalculateD2ParallelFst(std::string fichero,PopulationInfoMix* popInfoMix, P
       std::string fichero_sal_NeH = fichero + "_GONE2_Ne_mix";
       std::ofstream salida;
       salida.open(fichero_sal_NeH, std::ios::out);
-      salida <<std::fixed<< std::setprecision(7);
-      salida <<"# Estimates of Ne using observed LD values (weighted d² correlation coefficients) for different\n";
-      salida <<"# recombination rate bins. Extending the approximation of Hayes et al.(2003), which reffers\n";
-      salida <<"# to a single population and Ne changing linearly with time, to a model of two populations:\n";
-      salida <<"# each Ne estimate from a recombination rate is assumed that corresponds to a particular \n";
-      salida <<"# generation in the past. A metapopulation of two subpopulations of equal size is assumed.\n";
-      salida <<"# The Fst (subpopulation differentiation index) and the reciprocal migration rate m were\n";
-      salida <<"# estimated from the observed d² values of unlinked and weakly linked markers, and by using\n";
-      salida <<"# these estimates (Fst="<< popInfo->Fst <<", m="<< popInfo->m <<") the particular Ne and the expected LD\n";
-      salida <<"# were calculated for each bin of recrecombination rate.\n";
-      // salida <<"# Rec_rate_bin\tgeneration\tNe_metapopulation\td²_wi_subpops\td²_bw_subpops\t2_x_d²_wi_x_bw\td²_predicted_metapop\td²_predicted_sample\td²_observed_sample\n";
-      salida <<"# Rec_rate_bin\tgeneration\tNe_metapopulation\td²_predicted_metapop\td²_predicted_sample\td²_observed_sample\n";
+      salida << "# Estimate of historical Ne using observed LD  of different recombination bis. This is an\n"
+        "# extension to a subdivided population model of the Hayes et al. (2003) approach and\n"
+        "# should be considered an approximate trend.\n"
+        "#\n"
+        "# Number of subpopulations:\n"
+        << ps << "\n"
+        "# Fst:\n"
+        << std::fixed << std::setprecision(8) << Fst << "\n"
+        "# Migration rate:\n"
+        << m << "\n"
+        "#\n";
+
+      salida <<"# Rec_rate_bin\tgeneration\tN_T_metapop\tNe_metapop\td²_metapop\n";
 
       int contador=0;
+      double d2sample=d2s05;
+      double c=0.5;
       for (int nBin=-1;nBin<sampleInfo->binMax;++nBin){
-          if (nBin>=0){
-            Ne = FixMixEcuacion05link(numIndi, popInfo->f, popInfo->haplotype, popInfo->basecallcorrec, Fst,&popInfo->m,&xWt,&Dw2,&Db2,&DbDw,sampleInfo->xc[nBin],&d2spred,sampleInfo->d2[nBin], KK);
-              popInfoMix->xc[contador]=sampleInfo->xc[nBin];
-              popInfoMix->Nelink[contador]=2*Ne;
-              popInfoMix->mig[contador]=popInfo->m;
-              popInfoMix->Fst[contador]=popInfo->Fst;
-              popInfoMix->Dw2[contador]=Dw2;
-              popInfoMix->Db2[contador]=Db2;
-              popInfoMix->DbDw[contador]=DbDw;
-              popInfoMix->Dt2[contador]=Dw2+Db2+2*DbDw;
-              popInfoMix->Wt[contador]=xWt;
-              popInfoMix->d2spred[contador]=d2spred;
-              popInfoMix->d2sobs[contador]=sampleInfo->d2[nBin];
+        if (nBin>=0){
+          c=sampleInfo->xc[nBin];
+          d2sample=sampleInfo->d2[nBin];
+        }
+        double generacion=1/(2*c);
+        Fst=popInfo->Fst;
+        double zDb2 = Fst * Fst / (ps-1);
+        m= popInfo->m;
+        double ms = float(ps) * m / float(ps-1);
+        double m12 = (1-ms)*(1-ms);
+        double c2 = c*c;
+        double c12 = (1-c) * (1-c);
+
+        double zDw2 = (1-2*Fst*(1-Fst)-zDb2)*(1+c2)/(2*ps*Ne*(1-c12)+2.2*c12);
+        double zDbDw = ((kk2)*(zDb2)*m12*(1-(m))*((m))+(zDw2)/(2*ps*Ne))/(1-m12*(1-c)*(1-1.0/ps/Ne));
+
+        //double zDw2p = (zDw2)*c12 + (kk4)*(zDb2)*(1-(m))*(1-(m))*(m)*(m) + 2*(kk2)*(zDbDw)*(1-(m))*(m)*(1-c);
+        double zDbDwp = (zDbDw)*m12*(1-c) + (kk2)*(zDb2)*m12*(1-(m))* (m);
+        double zDb2p = (zDb2)*m12*m12;   
+
+        double zDw2preconstruida = (d2sample - sampley*fp12)/samplex-4*(zDb2p+zDbDwp);
+        double zDw2reconstruida = (zDw2preconstruida - (kk4)*(zDb2)*(1-(m))*(1-(m))*(m)*(m) - 2*(kk2)*(zDbDw)*(1-(m))*(m)*(1-c)) /c12;
+        double d2pob=zDw2reconstruida / (1-2*Fst*(1-Fst)-(zDb2)); // ahora es la poblacional
+        Ne=(1+c2-2.2*d2pob*c12)/(2*d2pob*(1-c12));
+        if (Ne > 0) {
+          salida <<std::fixed<< std::setprecision(5)<< c<<"\t"<<std::fixed<< std::setprecision(0)<< generacion<<"\t"<<std::fixed<< std::setprecision(2)<< Ne<< "\t"<< Ne/(1-Fst)<< "\t";
+          salida <<std::fixed<< std::setprecision(8)<< d2pob<<"\n";
+        }
+
+      
+        #ifdef EXPERIMENTAL_MIX
+        // vvvvvvvvvvvvvvvvvvvvvANADIDO PARA CALCULO ALGORITMO GENETICO
+        if (nBin>=0){
+            sampleInfo->d2[nBin]=d2pob;
           }
-          double generacion=1/(2*popInfoMix->xc[contador]);
-          if (generacion<155){
-            if (popInfoMix->Nelink[contador]<100000000){
-              // salida <<std::fixed<< std::setprecision(5)<< popInfoMix->xc[contador]<<"\t"<<std::fixed<< std::setprecision(0)<< generacion<<"\t"<<std::fixed<< std::setprecision(2)<< popInfoMix->Nelink[contador]<< "\t";
-              // salida <<std::fixed<< std::setprecision(8)<< Dw2/xWt <<"\t"<< Db2/xWt <<"\t"<< 2*DbDw/xWt <<"\t"<< popInfoMix->Dt2[contador]/xWt <<"\t"<<popInfoMix->d2spred[contador]<<"\t"<<popInfoMix->d2sobs[contador]<<"\n";
-              salida <<std::fixed<< std::setprecision(5)<< popInfoMix->xc[contador]<<"\t"<<std::fixed<< std::setprecision(0)<< generacion<<"\t"<<std::fixed<< std::setprecision(2)<< popInfoMix->Nelink[contador]<< "\t";
-              salida <<std::fixed<< std::setprecision(8)<< popInfoMix->Dt2[contador]/xWt <<"\t"<<popInfoMix->d2spred[contador]<<"\t"<<popInfoMix->d2sobs[contador]<<"\n";
-            }
-          }
-          ++contador;
+        // ^^^^^^^^^^^^^^^^^^^^^^FIN DE ANADIDO PARA CALCULO ALGRITMO GENETICO
+        #endif
+
+        ++contador;
       }
       salida.close();
-    }
-    else{
-      std::cerr << "#\n# The Ne estimate does not converge to a solution within the range of Fst from 0 to 1."<<std::endl;
-      // exit(EXIT_FAILURE);
+
+      #ifdef EXPERIMENTAL_MIX
+      // vvvvvvvvvvvvvvvvvvvvvANADIDO PARA CALCULO ALGORITMO GENETICO
+      contador=0;
+      for (int nBin=0;nBin<sampleInfo->binMax;++nBin){
+        if (sampleInfo->nxc[nBin] < 0.05){
+          contador=nBin;
+          break;
+        }
+      }
+      for (int nBin=contador;nBin<sampleInfo->binMax;++nBin){
+        sampleInfo->nxc[nBin-contador]=sampleInfo->nxc[nBin];
+        sampleInfo->d2[nBin-contador]=sampleInfo->d2[nBin];
+        sampleInfo->xc[nBin-contador]=sampleInfo->xc[nBin];        
+      }
+      sampleInfo->binMax-=contador;
+      // ^^^^^^^^^^^^^^^^^^^^^^FIN DE ANADIDO PARA CALCULO ALGORITMO GENETICO
+      #endif
     }
   }
   else{
@@ -1185,311 +1316,184 @@ void CalculateD2ParallelFst(std::string fichero,PopulationInfoMix* popInfoMix, P
   delete[] valid_idx;
 }
 
-//  MIGRACION entre dos subpoblaciones CON LIGAMIENTO:
-double MixEcuacionlink(double maxdistance,double mindistance, int indmaxdistanceindx,double* mapdist,double Neini,  double effeneind, double fp, int haplotype, double basecallcorrec, double Fst, double* m, double* Wt,double* Dw2,double* Db2, double* DbDw, double d2sobs, double KK)
-{
-    int DOSMIL, i, ii, j, k, conta,minj;
-    double sample_size, sample_size_h, samplex, sampley;
-    double d2spred, increL, increNe, sumad2spred, sumafrec;
-    double distancia,fp12, distmin, K12;
-    bool flagbreak = false;
-    double AA,BB,CC,DD,EE,c,c2,c12,m12,m22;
-    double Db2p,Dw2p,DbDwp;
 
-    K12 = (1.0 + KK / 4.0);
-    increL=0.0001; // El cromosoma de 10 Morgans (max) se parte en incres de 1/100.000 Morgans
-    distmin=mindistance+increL/2;
-    minj=int(distmin/increL);
+void Mix05ylink(int* ps,double* kk2,double* kk4,double* d2slink, double* d2s05,double* mind2dif,
+  double* minNedif, double* minm, double* dw2, double* db2, double* dbdw,
+  double* d2spred2,double* d2spred1,double maxdistance,
+  double effeneind, double fp, 
+  double Fst, double* m, 
+  double* Dw2,double* Db2, double* DbDw,double* mapdist, double* Ne,double increFst){
 
-    DOSMIL = 2000;
-    fp12 = (1 + fp) * (1 + fp);
-    sample_size = effeneind;
-    sample_size_h = sample_size * 2;
-    samplex = (sample_size_h - 2.0) * (sample_size_h - 2.0) * (sample_size_h - 2.0);
-    samplex += 8.0 / 5.0 * (sample_size_h - 2.0) * (sample_size_h - 2.0);
-    samplex += 4 * (sample_size_h - 2.0);
-    samplex /= ((sample_size_h - 1.0) * (sample_size_h - 1.0) * (sample_size_h - 1.0) + (sample_size_h - 1.0) * (sample_size_h - 1.0));
-    sampley = (2.0 * sample_size_h - 4.0) / ((sample_size_h - 1.0) * (sample_size_h - 1.0));
+  int ii, j,minj;
+  double increL, sumad2spred, sumafrec;
+  double d2ppred1,d2ppred2;
+  double distmin;
+  double minlog, maxlog, increlog,logNe;
+  double dif;
+  double ms, m12, distancia;
+  double Dw2p, Db2p, DbDwp;
+  double c, c2, c12;
+  double fp12, sample_size, sample_size_h, samplex, sampley;
 
-    double Ne = Neini;
-    if (Ne<1000){Ne=1000;}
-    if (Ne>1000000){Ne=1000000;}
+  fp12 = (1 + fp) * (1 + fp);
+  sample_size = effeneind;
+  sample_size_h = sample_size * 2;
+  samplex = (sample_size_h - 2.0) * (sample_size_h - 2.0) * (sample_size_h - 2.0);
+  samplex += 8.0 / 5.0 * (sample_size_h - 2.0) * (sample_size_h - 2.0);
+  samplex += 4 * (sample_size_h - 2.0);
+  samplex /= ((sample_size_h - 1.0) * (sample_size_h - 1.0) * (sample_size_h - 1.0) + (sample_size_h - 1.0) * (sample_size_h - 1.0));
+  sampley = (2.0 * sample_size_h - 4.0) / ((sample_size_h - 1.0) * (sample_size_h - 1.0));
 
-    *m= (1-Fst)/(16*Ne*Fst);
-    if (*m>0.5){*m=0.5;}
-    for (ii = 0; ii < 2; ++ii)
-    {
-        increNe = Ne / (4 * (ii + 1));
-        for (i = 0; i < 10; ++i)
-        {
-            for (conta = 0; conta < DOSMIL; ++conta)
-            {
-                sumad2spred = 0;
-                distancia = distmin;
-                sumafrec = 0;
-                j = minj;
-                while (distancia < maxdistance)
-                {
+  int CIEN=50;
+
+  increL=0.0001; // El cromosoma de 10 Morgans (max) se parte en incres de 1/100.000 Morgans
+  distmin=0.05+increL/2;
+  minj=int(distmin/increL);
+
+  minlog=0;
+  maxlog=6; //maximum Ne = 10^6 per subpop
+  increlog=maxlog/CIEN;
+  *mind2dif=99999999; // no valido
+  *minNedif=99999999;
+  *minm=99999999;
+  for (ii=0;ii<3;++ii){
+      logNe=minlog;
+      while(logNe<maxlog){
+          logNe+=increlog;
+          *Ne=pow(10,logNe);
+          // FORMULA ABREVIADA:
+          *m= (1-Fst)/(4*(*Ne)*Fst*pow((float(*ps)/float(*ps-1)),2));
+          // FORMULA COMPLETA:
+          // m = (1-pow(1-1/(2*ps/(ps-1)*Ne)*(1-Fst)/Fst,0.5))/(ps/(ps-1));
+          ms=float(*ps)*(*m)/float(*ps-1);
+          m12=(1-ms)*(1-ms);
+          if ((*m>0) && (*m<0.5)){
+              // AHORA VAN LOS DEl MISMO CROMOSOMA
+              sumad2spred = 0;
+              // sumad2ppred = 0;
+              distancia = distmin;
+              sumafrec = 0;
+              j = minj;
+              while (distancia < maxdistance)
+              {
                   c = (1 - exp(-2 * distancia)) / 2;
                   c2 = c * c;
                   c12 = (1 - c) * (1 - c);
-                  m12=(1-2*(*m))*(1-2*(*m));
 
-                  // AA=(1-m12)*m12*(1-1/(2*Ne));
-                  // BB=2*(1-m12)*(1-2.2/(4*Ne))*(1-c);
-                  // CC=1-(1-2.2/(4*Ne))*c12;
-                  // DD=1-m12*(1-1/(2*Ne))*(1-c);
-                  // EE=(1-m12)*(1-m12)*(1-c)*(1-2.2/(4*Ne));
+                  // FORMULACION ABREVIADA:
+                  *Db2=Fst*Fst/((*ps)-1);
+                  // *Dw2=(1-Fst)*(1-Fst)*(1+c2)/(2*(*ps)*(*Ne)*(1-c12)+2.2*c12);//****************
+                  *Dw2=(1-2*Fst*(1-Fst)-(*Db2))*(1+c2)/(2*(*ps)*(*Ne)*(1-c12)+2.2*c12);
+                  // *DbDw=((*kk2)*(*Db2)*(*m))/(1-m12*(1-c));// **************************
+                  *DbDw=((*kk2)*(*Db2)*m12*(1-(*m))*(*m)+(*Dw2)/(2*(*ps)*(*Ne)))/(1-m12*(1-c)*(1-1/(*ps)/(*Ne)));
 
-                  // *Db2=(*Wt)*Fst*Fst;
-                  // *DbDw=(*Db2)*(AA/DD+(EE/CC+(AA*BB)/(CC*DD))/(4*Ne*DD))+(*Wt)*(1-Fst)*(1-Fst)/(16*Ne*Ne*CC*DD);
-                  // *Dw2=(*Db2)*(EE/CC+(AA*BB)/(CC*DD))+(*Wt)*(1-Fst)*(1-Fst)*(1+c2)/(4*Ne*CC);
+                  Dw2p = (*Dw2)*c12 + (*kk4)*(*Db2)*(1-(*m))*(1-(*m))*(*m)*(*m) + 2*(*kk2)*(*DbDw)*(1-(*m))*(*m)*(1-c);
+                  DbDwp = (*DbDw)*m12*(1-c) + (*kk2)*(*Db2)*m12*(1-(*m))* (*m);
+                  Db2p = (*Db2)*m12*m12;                
+                  d2ppred1=Dw2p+4*Db2p+4*DbDwp;           
+                  *d2spred1=(d2ppred1)*samplex+sampley * fp12;
 
-                  *Db2=(*Wt)*Fst*Fst;
-                  *Dw2=(*Wt)*(1-Fst)*(1-Fst)*(1+c2)/(4*Ne*(1-c12)+2.2*c12);
-                  *DbDw=(4*(*Wt)*Fst*Fst*m12*(*m)+(*Dw2)/(4*Ne))/(1-m12*(1-c)*(1-1/2/Ne));
-
-                  Dw2p = (*Dw2)*c12 + (*Db2)*(1-m12)*(1-m12) + (*DbDw)*2*(1-m12)*(1-c);
-                  DbDwp = (*DbDw)*m12*(1-c) + (*Db2)*m12*(1-m12);
-                  Db2p = (*Db2)*m12*m12;
-
-                  *Dw2=Dw2p;
-                  *DbDw=DbDwp;
-                  *Db2=Db2p;
-
-                  switch (haplotype){
-                    case 0:
-                      d2spred=((*Dw2)+4*(*Db2)+4*(*DbDw))/(*Wt)*samplex*basecallcorrec+sampley*fp12;
-                      break;
-                    case 1:
-                      d2spred=((*Dw2)+(*Db2)+2*(*DbDw))/(*Wt)*basecallcorrec+1/(sample_size_h-1);
-                      break;
-                    case 2:
-                      d2spred=((*Dw2)+(*Db2)+2*(*DbDw))/(*Wt)*basecallcorrec+1/(sample_size_h-1);
-                      break;
-                    case 3:
-                      d2spred=((*Dw2)/4+(*Db2)+(*DbDw))/(*Wt)*basecallcorrec+1/(sample_size-1);
-                      break;
-                  }
-                  sumad2spred += *(mapdist+j) * d2spred; // La integral
+                  sumad2spred += (*(mapdist+j)) * (*d2spred1); // La integral
                   distancia += increL;
-                  sumafrec += *(mapdist+j);
+                  sumafrec += (*(mapdist+j));
                   ++j;
-                }
-                if (sumafrec > 0)
-                {
-                    d2spred = (sumad2spred / sumafrec);
-                }
-                else
-                {
-                    std::cerr << "Within chromosome integral cannot be computed." << std::endl;
-                    exit(EXIT_FAILURE);
-                }
-                if (d2spred > d2sobs)
-                {
-                    if (increNe < 0)
-                    {
-                        increNe /= -5;
-                        break;
-                    }
-                }
-                if (d2spred < d2sobs)
-                {
-                    if (increNe > 0)
-                    {
-                        increNe /= -5;
-                        break;
-                    }
-                }
-                if ((Ne + increNe) < 3)
-                {
-                    increNe /= 5;
-                    break;
-                }
-                else
-                {
-                    Ne += increNe;
-                    *m= (1-Fst)/(16*Ne*Fst);
-                    if (*m>0.5){*m=0.5;}
-                }
-                if (abs(increNe) < 0.01)
-                {
-                    break;
-                }
-                if (Ne > 100000000)
-                {
-                    flagbreak = true;
-                    break;
-                }
-                // if (flagbreak){
-                //     break;
-                // }
-            }
-            if (abs(increNe) < 0.1)
-            {
-                break;
-            }
-            if (flagbreak)
-            {
-                break;
-            }
-        }
-        if (flagbreak)
-        {
-            break;
-        }
-    }
-    return Ne;
-}
-//  MIGRACION entre dos subpoblaciones CON c=0.5:
-double MixEcuacion05(double Neini,  double effeneind, double fp, int haplotype, double basecallcorrec, double Fst, double* m, double* Wt,double* Dw2,double* Db2, double* DbDw, double d2sobs, double KK)
-{
-    int MIL, DOSMIL, i, ii, j, k, conta;
-    double sample_size, sample_size_h, samplex, sampley;
-    double d2spred, increL, ele, increNe, sumad2spred, sumafrec;
-    double fp12, K12;
-    bool flagbreak = false;
-    double AA,BB,CC,DD,EE,c,c2,c12,m12,m22;
-    double Db2p,Dw2p,DbDwp;
+              }
+              if (sumafrec > 0)
+              {
+                  *d2spred1 = (sumad2spred / sumafrec);
+                  // d2ppred1 = (sumad2ppred / sumafrec);
+              }
+              else
+              {
+                  std::cerr << "Within chromosome integral cannot be computed." << std::endl;
+                  exit(EXIT_FAILURE);
+              }
+              //
+              // AHORA VAN LOS DE DISTINTO CROMOSOMA
+              c = 0.5;
+              c2 = c * c;
+              c12 = (1 - c) * (1 - c);
 
-    K12 = (1.0 + KK / 4.0);
-    MIL = 1000;
-    DOSMIL = 2000;
-    fp12 = (1 + fp) * (1 + fp);
-    sample_size = effeneind;
-    sample_size_h = sample_size * 2;
-    samplex = (sample_size_h - 2.0) * (sample_size_h - 2.0) * (sample_size_h - 2.0);
-    samplex += 8.0 / 5.0 * (sample_size_h - 2.0) * (sample_size_h - 2.0);
-    samplex += 4 * (sample_size_h - 2.0);
-    samplex /= ((sample_size_h - 1.0) * (sample_size_h - 1.0) * (sample_size_h - 1.0) + (sample_size_h - 1.0) * (sample_size_h - 1.0));
-    sampley = (2.0 * sample_size_h - 4.0) / ((sample_size_h - 1.0) * (sample_size_h - 1.0));
+              // FORMULACION ABREVIADA:
+              *Db2=Fst*Fst/((*ps)-1);
+              // *Dw2=(1-Fst)*(1-Fst)*(1+c2)/(2*(*ps)*(*Ne)*(1-c12)+2.2*c12);// *********************
+              *Dw2=(1-2*Fst*(1-Fst)-(*Db2))*(1+c2)/(2*(*ps)*(*Ne)*(1-c12)+2.2*c12);
+              // *DbDw=((*kk2)*(*Db2)*(*m))/(1-m12*(1-c));// **************************
+              *DbDw=((*kk2)*(*Db2)*m12*(1-(*m))*((*m))+(*Dw2)/(2*(*ps)*(*Ne)))/(1-m12*(1-c)*(1-1/(*ps)/(*Ne)));
 
-    double Ne = Neini;
-    if (Ne<1000){Ne=1000;}
-    if (Ne>1000000){Ne=1000000;}
+              Dw2p = (*Dw2)*c12 + (*kk4)*(*Db2)*(1-(*m))*(1-(*m))*(*m)*(*m) + 2*(*kk2)*(*DbDw)*(1-(*m))*(*m)*(1-c);
+              DbDwp = (*DbDw)*m12*(1-c) + (*kk2)*(*Db2)*m12*(1-(*m))* (*m);
+              Db2p = (*Db2)*m12*m12;
+              d2ppred2=Dw2p+4*Db2p+4*DbDwp;           
+              *d2spred2=(d2ppred2)*samplex+sampley * fp12;
 
-    c = 0.5;
-    c2 = c * c;
-    c12 = (1 - c) * (1 - c);
-
-    *m= (1-Fst)/(16*Ne*Fst);
-    if (*m>0.5){*m=0.5;}
-    for (ii = 0; ii < 2; ++ii)
-    {
-        increNe = Ne / (4 * (ii + 1));
-        for (i = 0; i < 20; ++i)
-        {
-            for (conta = 0; conta < DOSMIL; ++conta)
-            {
-                m12=(1-2*(*m))*(1-2*(*m));
-
-                // AA=(1-m12)*m12*(1-1/(2*Ne));
-                // BB=2*(1-m12)*(1-2.2/(4*Ne))*(1-c);
-                // CC=1-(1-2.2/(4*Ne))*c12;
-                // DD=1-m12*(1-1/(2*Ne))*(1-c);
-                // EE=(1-m12)*(1-m12)*(1-c)*(1-2.2/(4*Ne));
-
-                // *Db2=(*Wt)*Fst*Fst;
-                // *DbDw=(*Db2)*(AA/DD+(EE/CC+(AA*BB)/(CC*DD))/(4*Ne*DD))+(*Wt)*(1-Fst)*(1-Fst)/(16*Ne*Ne*CC*DD);
-                // *Dw2=(*Db2)*(EE/CC+(AA*BB)/(CC*DD))+(*Wt)*(1-Fst)*(1-Fst)*(1+c2)/(4*Ne*CC);
-
-                *Db2=(*Wt)*Fst*Fst;
-                *Dw2=(*Wt)*(1-Fst)*(1-Fst)*(1+c2)/(4*Ne*(1-c12)+2.2*c12);
-                *DbDw=(4*(*Wt)*Fst*Fst*m12*(*m)+(*Dw2)/(4*Ne))/(1-m12*(1-c)*(1-1/2/Ne));
-
-                Dw2p = (*Dw2)*c12 + (*Db2)*(1-m12)*(1-m12) + (*DbDw)*2*(1-m12)*(1-c);
-                DbDwp = (*DbDw)*m12*(1-c) + (*Db2)*m12*(1-m12);
-                Db2p = (*Db2)*m12*m12;
-
-                *Dw2=Dw2p;
-                *DbDw=DbDwp;
-                *Db2=Db2p;
-
-                switch (haplotype){
-                  case 0:
-                    d2spred=((*Dw2)+4*(*Db2)+4*(*DbDw))/(*Wt)*samplex*basecallcorrec+sampley*fp12;
-                    break;
-                  case 1:
-                    d2spred=((*Dw2)+(*Db2)+2*(*DbDw))/(*Wt)*basecallcorrec+1/(sample_size_h-1);
-                    break;
-                  case 2:
-                    d2spred=((*Dw2)+(*Db2)+2*(*DbDw))/(*Wt)*basecallcorrec+1/(sample_size_h-1);
-                    break;
-                  case 3:
-                    d2spred=((*Dw2)/4+(*Db2)+(*DbDw))/(*Wt)*basecallcorrec+1/(sample_size-1);
-                    break;
-                }
-
-                if (d2spred > d2sobs)
-                {
-                    if (increNe < 0)
-                    {
-                        increNe /= -5;
-                        break;
-                    }
-                }
-                if (d2spred < d2sobs)
-                {
-                    if (increNe > 0)
-                    {
-                        increNe /= -5;
-                        break;
-                    }
-                }
-                if ((Ne + increNe) < 3)
-                {
-                    increNe /= 5;
-                    break;
-                }
-                else
-                {
-                    Ne += increNe;
-                    *m= (1-Fst)/(16*Ne*Fst);
-                    if (*m>0.5){*m=0.5;}
-                }
-                if (abs(increNe) < 0.01)
-                {
-                    break;
-                }
-                if (Ne > 100000000)
-                {
-                    flagbreak = true;
-                    break;
-                }
-                // if (flagbreak){
-                //     break;
-                // }
-            }
-            if (abs(increNe) < 0.1)
-            {
-                break;
-            }
-            if (flagbreak)
-            {
-                break;
-            }
-        }
-        if (flagbreak)
-        {
-            break;
-        }
-    }
-    return Ne;
+              dif=pow(((*d2spred1)-(*d2slink))/(*d2slink),2)+pow(((*d2spred2)-(*d2s05))/(*d2s05),2);
+              if (dif<(*mind2dif)){
+                  *mind2dif=dif;
+                  *minNedif=(*Ne);
+                  *minm=*m;
+                  *dw2=*Dw2;
+                  *db2=*Db2;
+                  *dbdw=*DbDw;
+              }
+          }
+      }
+      *Ne=*minNedif;
+      if ((*Ne)==99999999){
+          break;
+      }
+      minlog=log10(*Ne)-increlog;
+      maxlog=log10(*Ne)+increlog;
+      increlog=(maxlog-minlog)/CIEN;    
+  }
 }
 
-//  MIGRACION entre dos subpoblaciones CON c=0.5:
-double FixMixEcuacion05link(double effeneind, double fp, int haplotype, double basecallcorrec, double Fst, double* m, double* Wt,double* Dw2,double* Db2, double* DbDw, double c,double* d2spred,double d2sobs, double KK)
+void CalculaOtros(double* mind2dif,double* m, double Fst,double Ne, int* nsubs,
+  double* Dw2,double* Db2, double* DbDw, double* d2spred2, int* ps,double* kk2,double* kk4, double* d2p05){
+
+  double Dw2p, Db2p, DbDwp;
+  double c, c2, c12;
+  double m12, ms;
+
+  c=0.5;
+  c2 = c * c;
+  c12 = (1 - c) * (1 - c);
+
+  *mind2dif=999999999;
+  *m= (1-Fst)/(4*Ne*Fst*pow((float(*nsubs)/float(*nsubs-1)),2));
+  ms=float(*nsubs)*(*m)/float(*nsubs-1);
+  m12=(1-ms)*(1-ms);
+
+
+  if (((*m)>0) && (*m<0.5)){
+
+      // FORMULACION ABREVIADA:
+      *Db2=Fst*Fst/(*nsubs-1);
+      // *Dw2=(1-Fst)*(1-Fst)*(1+c2)/(2*(*nsubs)*Ne*(1-c12)+2.2*c12);// ***************************
+      *Dw2=(1-2*Fst*(1-Fst)-(*Db2))*(1+c2)/(2*(*nsubs)*Ne*(1-c12)+2.2*c12);
+      // *DbDw=((*kk2)*(*Db2)*(*m))/(1-m12*(1-c));// **************************
+      *DbDw=((*kk2)*(*Db2)*m12*(1-(*m))*(*m)+(*Dw2)/(2*(*nsubs)*Ne))/(1-m12*(1-c)*(1-1/(*nsubs)/Ne));
+
+      Dw2p = (*Dw2)*c12 + (*kk4)*(*Db2)*(1-(*m))*(1-(*m))*(*m)*(*m) + 2*(*kk2)*(*DbDw)*(1-(*m))*(*m)*(1-c);
+      DbDwp = (*DbDw)*m12*(1-c) + (*kk2)*(*Db2)*m12*(1-(*m))* (*m);
+      Db2p = (*Db2)*m12*m12;                
+      *d2spred2=(Dw2p+4*Db2p+4*DbDwp); // en realidad es poblacional
+
+      *mind2dif=std::abs(*d2spred2-*d2p05); // diferencia entre esperado y real.
+  }
+}
+
+//  MIGRACION entre subpoblaciones:
+double FixMixEcuacion05link(int* ps,double* kk2,double* kk4,double effeneind, double fp, int haplotype, double basecallcorrec, double Fst, double* m, double* Wt,double* Dw2,double* Db2, double* DbDw, double c,double* d2spred,double d2sobs, double KK)
 {
-    int MIL, DOSMIL, i, ii, j, k, conta;
+    int DOSMIL, i, ii, conta;
     double sample_size, sample_size_h, samplex, sampley;
-    double increL, ele, increNe, sumad2spred, sumafrec;
-    double fp12, K12;
+    double increNe;
+    double fp12, ms;
     bool flagbreak = false;
-    double AA,BB,CC,DD,EE,c2,c12,m12,m22;
+    double c2,c12,m12;
     double Db2p,Dw2p,DbDwp;
 
-    K12 = (1.0 + KK / 4.0);
-    MIL = 1000;
     DOSMIL = 2000;
     fp12 = (1 + fp) * (1 + fp);
     sample_size = effeneind;
@@ -1502,7 +1506,8 @@ double FixMixEcuacion05link(double effeneind, double fp, int haplotype, double b
 
     c2 = c * c;
     c12 = (1 - c) * (1 - c);
-    m12=(1-2*(*m))*(1-2*(*m));
+    ms=float(*ps)*(*m)/float(*ps-1);
+    m12=(1-ms)*(1-ms);
 
     double Ne = 5000;
     for (ii = 0; ii < 2; ++ii)
@@ -1513,43 +1518,21 @@ double FixMixEcuacion05link(double effeneind, double fp, int haplotype, double b
             for (conta = 0; conta < DOSMIL; ++conta)
             {
 
-                // AA=(1-m12)*m12*(1-1/(2*Ne));
-                // BB=2*(1-m12)*(1-2.2/(4*Ne))*(1-c);
-                // CC=1-(1-2.2/(4*Ne))*c12;
-                // DD=1-m12*(1-1/(2*Ne))*(1-c);
-                // EE=(1-m12)*(1-m12)*(1-c)*(1-2.2/(4*Ne));
+                *Db2=Fst*Fst/((*ps)-1);
+                // *Dw2=(1-Fst)*(1-Fst)*(1+c2)/(2*(*ps)*Ne*(1-c12)+2.2*c12);
+                *Dw2=(1-2*Fst*(1-Fst)-(*Db2))*(1+c2)/(2*(*ps)*Ne*(1-c12)+2.2*c12);
+                // *DbDw=((*kk2)*(*Db2)*(*m))/(1-m12*(1-c));// **************************
+                *DbDw=((*kk2)*(*Db2)*m12*(1-(*m))*(*m)+(*Dw2)/(2*(*ps)*Ne))/(1-m12*(1-c)*(1-1/(*ps)/Ne));
 
-                // *Db2=(*Wt)*Fst*Fst;
-                // *DbDw=(*Db2)*(AA/DD+(EE/CC+(AA*BB)/(CC*DD))/(4*Ne*DD))+(*Wt)*(1-Fst)*(1-Fst)/(16*Ne*Ne*CC*DD);
-                // *Dw2=(*Db2)*(EE/CC+(AA*BB)/(CC*DD))+(*Wt)*(1-Fst)*(1-Fst)*(1+c2)/(4*Ne*CC);
-
-                *Db2=(*Wt)*Fst*Fst;
-                *Dw2=(*Wt)*(1-Fst)*(1-Fst)*(1+c2)/(4*Ne*(1-c12)+2.2*c12);
-                *DbDw=(4*(*Wt)*Fst*Fst*m12*(*m)+(*Dw2)/(4*Ne))/(1-m12*(1-c)*(1-1/2/Ne));
-
-                Dw2p = (*Dw2)*c12 + (*Db2)*(1-m12)*(1-m12) + (*DbDw)*2*(1-m12)*(1-c);
-                DbDwp = (*DbDw)*m12*(1-c) + (*Db2)*m12*(1-m12);
-                Db2p = (*Db2)*m12*m12;
+                Dw2p = (*Dw2)*c12 + (*kk4)*(*Db2)*(1-(*m))*(1-(*m))*(*m)*(*m) + 2*(*kk2)*(*DbDw)*(1-(*m))*(*m)*(1-c);
+                DbDwp = (*DbDw)*m12*(1-c) + (*kk2)*(*Db2)*m12*(1-(*m))* (*m);
+                Db2p = (*Db2)*m12*m12;                
 
                 *Dw2=Dw2p;
                 *DbDw=DbDwp;
                 *Db2=Db2p;
-
-                switch (haplotype){
-                  case 0:
-                    *d2spred=((*Dw2)+4*(*Db2)+4*(*DbDw))/(*Wt)*samplex*basecallcorrec+sampley*fp12;
-                    break;
-                  case 1:
-                    *d2spred=((*Dw2)+(*Db2)+2*(*DbDw))/(*Wt)*basecallcorrec+1/(sample_size_h-1);
-                    break;
-                  case 2:
-                    *d2spred=((*Dw2)+(*Db2)+2*(*DbDw))/(*Wt)*basecallcorrec+1/(sample_size_h-1);
-                    break;
-                  case 3:
-                    *d2spred=((*Dw2)/4+(*Db2)+(*DbDw))/(*Wt)*basecallcorrec+1/(sample_size-1);
-                    break;
-                }
-
+                *d2spred=((*Dw2)+4*(*Db2)+4*(*DbDw))*samplex+sampley*fp12;
+      
                 if (*d2spred > d2sobs)
                 {
                     if (increNe < 0)
@@ -1584,9 +1567,6 @@ double FixMixEcuacion05link(double effeneind, double fp, int haplotype, double b
                     flagbreak = true;
                     break;
                 }
-                // if (flagbreak){
-                //     break;
-                // }
             }
             if (abs(increNe) < 0.01)
             {

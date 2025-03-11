@@ -119,3 +119,5 @@ EXAMPLES:
 ```
 # Demo
 We have uploaded some sample data in the currentNe2 repo, which you can find [here](https://github.com/esrud/currentNe2)
+# Acknowledgements
+This study forms part of the Marine Science Programme (ThinkInAzul) supported by the Ministerio de Ciencia e Innovación and Xunta de Galicia with funding from the European Union NextGenerationEU (PRTR-C17.I1) and European Maritime and Fisheries Fund.

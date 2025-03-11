@@ -223,9 +223,14 @@ void CalculateAverageNe(GsampleInfo* sampleInfo) {
          / (sampleInfo->sampleZ2*sampleInfo->cValRep[indx] * sampleInfo->basecallcorrec);
       } 
       else { // diploides unphased
+        if (sampleInfo->mix){
+          dpob=sampleInfo->d2cObs[indx];
+        }
+        else{
         dpob = 4.0 * (sampleInfo->d2cObs[indx] - sampleInfo->sampleZ1 ) /
                (sampleInfo->cValRep[indx] * sampleInfo->sampleZ2 * sampleInfo->basecallcorrec);
-      } 
+        } 
+      }
       Ne0 = 2 * (sampleInfo->onePluscValSq[indx] / (dpob * 2 * (1 - sampleInfo->oneMinuscValSq[indx])) -
                  1.1 * sampleInfo->oneMinuscValSq[indx] / (1 - sampleInfo->oneMinuscValSq[indx]));
       if (Ne0 > 10) {

@@ -10,7 +10,7 @@ bool ReadPed(std::string fichPed, PopulationInfo* popInfo) {
   uint8_t base[MAXLOCI] = {0};
   uint8_t base1[1], base2[1];
   int contaLociBase = 0, nline=0;
-  int conta = 0, posi = 0, posi2 = 0, longi = 0,i;
+  int conta = 0, posi = 0, posi2 = 0, longi = 0;
   std::string line;
   std::string str_plink = "AGCTNagctn0123456789";
   std::string str_base = "";
@@ -54,9 +54,9 @@ bool ReadPed(std::string fichPed, PopulationInfo* popInfo) {
         base2[0] = line.at(posi);
         rightletter=true;
         str_base=base1[0];
-        if (str_plink.find(str_base) == -1){rightletter=false;}
+        if (str_plink.find(str_base) == std::string::npos){rightletter=false;}
         str_base=base2[0];
-        if (str_plink.find(str_base) == -1){rightletter=false;}
+        if (str_plink.find(str_base) == std::string::npos){rightletter=false;}
         if (!rightletter) {
             std::cerr << "Wrong allele in line "<<nline<<" of ped file (maybe also in other lines). Only bases A, G, C, T and N (case-insensitive) and numbers from 0 to 9 are allowed." << std::endl;
             exit(EXIT_FAILURE);

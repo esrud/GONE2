@@ -1,12 +1,14 @@
 MAXLOCI=2000000
-MAXIND=1000
-CXX=g++
+MAXIND=2000
+CC=g++
 CLUSTERC=/DATA/APPS/gcc/7.2.0/bin/g++
 COMMON_FLAGS=-Wall -fopenmp
 CFLAGS=-O3 -DMAXLOCI=$(MAXLOCI) -DMAXIND=$(MAXIND)
 FASTFLAGS =-Ofast
 OFNAME=gone2
 LIBFILES=lib/*.cpp
+
+all: gone
 
 info:
 	@echo
@@ -30,26 +32,24 @@ info:
 #	@read -p "Press any key to continue..." pp
 	@echo
 gone: info
-	$(CXX) $(COMMON_FLAGS) $(CFLAGS) -o $(OFNAME) gone2.cpp $(LIBFILES)
+	$(CC) $(COMMON_FLAGS) $(CFLAGS) -o $(OFNAME) gone2.cpp $(LIBFILES)
 clean:
 	rm $(OFNAME) 
 fast: info
-	$(CXX) $(COMMON_FLAGS) $(FASTFLAGS) -o $(OFNAME) gone2.cpp $(LIBFILES)
+	$(CC) $(COMMON_FLAGS) $(FASTFLAGS) -o $(OFNAME) gone2.cpp $(LIBFILES)
 static: info
-	$(CXX) $(COMMON_FLAGS) $(CFLAGS) -static -o $(OFNAME) gone2.cpp $(LIBFILES)
+	$(CC) $(COMMON_FLAGS) $(CFLAGS) -static -o $(OFNAME) gone2.cpp $(LIBFILES)
 enrique: info
-	$(CXX) $(COMMON_FLAGS) $(CFLAGS) -mcmodel=medium -o $(OFNAME) gone2.cpp $(LIBFILES)
+	$(CC) $(COMMON_FLAGS) $(CFLAGS) -mcmodel=medium -o $(OFNAME) gone2.cpp $(LIBFILES)
 arch: info
-	$(CXX) $(COMMON_FLAGS) $(CFLAGS) -o $(OFNAME) -mavx2 -march=native gone2.cpp $(LIBFILES)
+	$(CC) $(COMMON_FLAGS) $(CFLAGS) -o $(OFNAME) -mavx2 -march=native gone2.cpp $(LIBFILES)
 unoptimized: info
-	$(CXX) $(COMMON_FLAGS) -mcmodel=large -o $(OFNAME) gone2.cpp $(LIBFILES)
+	$(CC) $(COMMON_FLAGS) -mcmodel=large -o $(OFNAME) gone2.cpp $(LIBFILES)
 debug: info
-	$(CXX) $(COMMON_FLAGS) $(CFLAGS) -g -o $(OFNAME) gone2.cpp $(LIBFILES)
+	$(CC) $(COMMON_FLAGS) $(CFLAGS) -g -o $(OFNAME) gone2.cpp $(LIBFILES)
 cluster: info
 	$(CLUSTERC) $(COMMON_FLAGS) $(CFLAGS) -static -o $(OFNAME) gone2.cpp $(LIBFILES)
 profile: info
 	clang++ -fopenmp -g -O3 -mavx2 -Wall -pedantic -o gone2_perf gone2.cpp $(LIBFILES)
-static: info
-	$(CXX) $(COMMON_FLAGS) $(CFLAGS) -static -o $(OFNAME) gone2.cpp $(LIBFILES)
 dbg: info
-	$(CXX) -fopenmp -g -O3 -Wall -pedantic -o gone2_perf gone2.cpp $(LIBFILES)
+	$(CC) -fopenmp -g -O3 -Wall -pedantic -o gone2_perf gone2.cpp $(LIBFILES)

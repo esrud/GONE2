@@ -17,7 +17,7 @@ bool ReadTped(std::string fichTped, PopulationInfo *popInfo) {
    */
   char base1, base2;
   int contaIndBase = 0, nline =0;
-  int conta = 0, posi = 0, posi2 = 0, longi = 0, i, j;
+  int conta = 0, posi = 0, posi2 = 0, longi = 0;
   std::string line;
   std::string cromocod;
   std::string cromocodback = "laksjhbqne";
@@ -110,9 +110,9 @@ bool ReadTped(std::string fichTped, PopulationInfo *popInfo) {
         base2 = line.at(posi);
         rightletter=true;
         str_base=base1;
-        if (str_plink.find(str_base) == -1){rightletter=false;}
+        if (str_plink.find(str_base) == std::string::npos){rightletter=false;}
         str_base=base2;
-        if (str_plink.find(str_base) == -1){rightletter=false;}
+        if (str_plink.find(str_base) == std::string::npos){rightletter=false;}
         if (!rightletter) {
             std::cerr << "Wrong allele in line "<<nline<<" of tped file (maybe also in other lines). Only bases A, G, C, T and N (case-insensitive) and numbers from 0 to 9 are allowed." << std::endl;
             exit(EXIT_FAILURE);

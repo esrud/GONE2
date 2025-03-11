@@ -88,7 +88,7 @@ bool ReadVcf(std::string fichVcf, PopulationInfo *popInfo) {
         if (str_base=="."){
             hayalelos=false;
         }
-        else if (str_vcf.find(str_base) == -1){
+        else if (str_vcf.find(str_base) == std::string::npos){
             rightletter=false;
             break;
         }
@@ -109,7 +109,7 @@ bool ReadVcf(std::string fichVcf, PopulationInfo *popInfo) {
         if (str_base=="."){
             hayalelos=false;
         }
-        else if (str_vcf.find(str_base) == -1){
+        else if (str_vcf.find(str_base) == std::string::npos){
             rightletter=false;
             break;
         }

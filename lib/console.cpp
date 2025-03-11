@@ -17,7 +17,7 @@ void printHelp(char* appName) {
     "           file, when using the tped format, or in an accompanying .map file,\n"
     "           when using the ped or vcf formats. This .map file has the same \n"
     "           name as the .ped or .vcf data file and must be located in the\n"
-    "           same directory as the data file. When a constant recombination"
+    "           same directory as the data file. When a constant recombination\n"
     "           rate per Mb is assumed (option -r), the physical map is used to\n"
     "           infer an approximate genetic map, and the detailed genetic map\n"
     "           information in the data file is ignored, if available.\n"
@@ -242,8 +242,8 @@ void HandleInput(int argc, char * argv[], AppParams* params) {
       }
   }
   if (params->mix){
-    if ((params->haplotype == 1) || (params->haplotype == 3)){
-      std::cerr << "There is no possibility of analyzing haploid and low-coverage data to infer Ne of metapopulations." << std::endl;
+    if ((params->haplotype !=0)){
+      std::cerr << "There is no possibility of analyzing phased-diploid, haploid and low-coverage data to infer Ne of metapopulations." << std::endl;
       exit(EXIT_FAILURE);
     }
     if (params->ngensampling != 1){
