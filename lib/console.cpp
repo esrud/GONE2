@@ -201,12 +201,15 @@ void HandleInput(int argc, char * argv[], AppParams* params) {
       // }
       case 'S': {
         params->semilla = std::atoi(optarg);
+        continue;
       }
       case 'z': {
         params->flags |= FLAG_REP;
+        continue;
       }
       case 'v': {
         params->flags |= FLAG_DEBUG;
+        continue;
       }
       case -1:
         break;
