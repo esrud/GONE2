@@ -46,6 +46,13 @@ If you use the *make* command, it can also be customized in a similar way:
 ```
 make MAXLOCI=YOUR_NUMBER_OF_LOCI MAXIND=YOUR_NUMBER_OF_IND gone
 ```
+### MacOS
+On MacOS you can compile it by running:
+```
+make macos
+```
+This assumes that the installed version of OpenMP is 19.1.5. You may need to change this in the Makefile to the version installed on your system, by modifying the MAC_PATH_OPENMP variable. We would appreciate if you could let us know whether this worked on your system.
+
 # Usage
 ```
 GONE2 - Genetic Optimization for Ne Esimation (v2.0 - Jan 2024)
@@ -96,7 +103,8 @@ OPTIONS:
 EXAMPLES:
     - Analysis of high quality diploid unphased data in "file.ped" (PLINK
       format) assumes a constant recombination rate of 1.1 cM per Mb across
-      the genome (no need for a detailed genetic map). 16 threads will be used:
+      the genome (no need for a detailed genetic map within the .map file).
+      16 threads will be used:
           ./gone2 -r 1.1 -t 16 file.ped
     - A subsample of 10000 SNPs of the individuals in "file.ped" assuming
       assuming that they were randomly sampled from a metapopulation composed
@@ -121,3 +129,5 @@ EXAMPLES:
 We have uploaded some sample data in the currentNe2 repo, which you can find [here](https://github.com/esrud/currentNe2)
 # Acknowledgements
 This study forms part of the Marine Science Programme (ThinkInAzul) supported by the Ministerio de Ciencia e Innovación and Xunta de Galicia with funding from the European Union NextGenerationEU (PRTR-C17.I1) and European Maritime and Fisheries Fund.
+# How to cite
+Santiago, E., Köpke, C. & Caballero, A. Accounting for population structure and data quality in demographic inference with linkage disequilibrium methods. Nat Commun 16, 6054 (2025). [https://doi.org/10.1038/s41467-025-61378-w](https://doi.org/10.1038/s41467-025-61378-w)

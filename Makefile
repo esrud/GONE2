@@ -3,6 +3,8 @@ MAXIND=2000
 CC=g++
 CLUSTERC=/DATA/APPS/gcc/7.2.0/bin/g++
 COMMON_FLAGS=-Wall -fopenmp
+MAC_PATH_OPENMP=/opt/homebrew/Cellar/libomp/19.1.5
+MAC_FLAGS=-Wall -Xpreprocessor -fopenmp -lomp -I$(MAC_PATH_OPENMP)/include -L$(MAC_PATH_OPENMP)/lib -std=c++11
 CFLAGS=-O3 -DMAXLOCI=$(MAXLOCI) -DMAXIND=$(MAXIND)
 FASTFLAGS =-Ofast
 OFNAME=gone2
@@ -53,3 +55,5 @@ profile: info
 	clang++ -fopenmp -g -O3 -mavx2 -Wall -pedantic -o gone2_perf gone2.cpp $(LIBFILES)
 dbg: info
 	$(CC) -fopenmp -g -O3 -Wall -pedantic -o gone2_perf gone2.cpp $(LIBFILES)
+macos: info
+	$(CC) $(MAC_FLAGS) $(CFLAGS) -o $(OFNAME) gone2.cpp $(LIBFILES)
