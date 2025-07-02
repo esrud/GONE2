@@ -34,7 +34,7 @@ void printHelp(char* appName) {
     "           assumes diploid unphased genotypes and can be used with any\n"
     "           distribution of coverage within and between individuals.\n"
     "    -x     The sample is considered to be a random set of individuals from\n"
-    "           a metapopulation with two subpopulations of equal size.\n"
+    "           a metapopulation with subpopulations of equal size.\n"
     "    -b     Average base calling error rate per site (0 by default). \n"
     //"    -n     Number of consecutive sampling generations (1 by default). \n"
     "    -i     Number of individuals to use in the analysis (all by default)\n"
@@ -201,12 +201,15 @@ void HandleInput(int argc, char * argv[], AppParams* params) {
       // }
       case 'S': {
         params->semilla = std::atoi(optarg);
+        continue;
       }
       case 'z': {
         params->flags |= FLAG_REP;
+        continue;
       }
       case 'v': {
         params->flags |= FLAG_DEBUG;
+        continue;
       }
       case -1:
         break;
