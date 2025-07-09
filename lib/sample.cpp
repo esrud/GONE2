@@ -1304,7 +1304,12 @@ void CalculateD2ParallelFst(
     }
   }
   else{
-    std::cerr << "# Ne cannot be estimated because the LD is smaller for linked than for unlinked markers.\n"<<std::endl;
+    if (d2 < 0) {
+      std::cerr << "# Ne cannot be estimated. d2 estimate for the population is negative.\n" << std::endl;
+                 
+    } else {
+      std::cerr << "# Ne cannot be estimated because the LD is smaller for linked than for unlinked markers.\n"<<std::endl;
+    }
   }
   // Free the rest of the memory
   delete[] tnxc;
