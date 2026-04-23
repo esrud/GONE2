@@ -151,7 +151,7 @@ bool ReadTped(std::string fichTped, PopulationInfo *popInfo) {
             popInfo->indi[nIndi][nLoci] =
               base1 == base[nLoci] ? 0 : 2;
             popInfo->indi[nIndi + 1][nLoci] =
-              base1 == base[nLoci] ? 0 : 2;
+              base2 == base[nLoci] ? 0 : 2;
           }
         }
         else {
