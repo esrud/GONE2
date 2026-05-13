@@ -1,32 +1,32 @@
 
 #include "gsample.hpp"
-//std::random_device seed;
-// mersenne_twister_engine 64bit (very good but very big)
-//std::mt19937_64 rng(seed());
+// std::random_device seed;
+//  mersenne_twister_engine 64bit (very good but very big)
+// std::mt19937_64 rng(seed());
 Xoshiro256plus xprng(0);
 // uses the result of the engine to generate uniform dist
-//std::uniform_real_distribution<> uniforme01(0.0,1.0);
+// std::uniform_real_distribution<> uniforme01(0.0,1.0);
 
-void SortSampleBycVal(GsampleInfo* sampleInfo, int linesRead) {
+void SortSampleBycVal(GsampleInfo *sampleInfo, int linesRead) {
   int maxcIdx;
   double maxc;
   int temp;
   for (int i = 0; i < (sampleInfo->sampleSize - 1); ++i) {
-      maxcIdx = i;
-      maxc = sampleInfo->cVal[sampleInfo->indx[maxcIdx]];
-      for (int j = i + 1; j < linesRead; ++j) {
-        if (maxc < sampleInfo->cVal[sampleInfo->indx[j]]) {
-          maxcIdx = j;
-          maxc = sampleInfo->cVal[sampleInfo->indx[maxcIdx]];
-        }
+    maxcIdx = i;
+    maxc = sampleInfo->cVal[sampleInfo->indx[maxcIdx]];
+    for (int j = i + 1; j < linesRead; ++j) {
+      if (maxc < sampleInfo->cVal[sampleInfo->indx[j]]) {
+        maxcIdx = j;
+        maxc = sampleInfo->cVal[sampleInfo->indx[maxcIdx]];
       }
-      temp = sampleInfo->indx[i];
-      sampleInfo->indx[i] = sampleInfo->indx[maxcIdx];
-      sampleInfo->indx[maxcIdx] = temp;
     }
+    temp = sampleInfo->indx[i];
+    sampleInfo->indx[i] = sampleInfo->indx[maxcIdx];
+    sampleInfo->indx[maxcIdx] = temp;
+  }
 }
 
-int CompressSample(GsampleInfo* sampleInfo, int linesRead) {
+int CompressSample(GsampleInfo *sampleInfo, int linesRead) {
   int minBinIdx;
   double minBinN;
   int prevBin, nextBin;
@@ -165,7 +165,7 @@ int CompressSample(GsampleInfo* sampleInfo, int linesRead) {
   return linesRead;
 }
 
-void CalculateSumNBins(GsampleInfo* sampleInfo) {
+void CalculateSumNBins(GsampleInfo *sampleInfo) {
   sampleInfo->sumNBin = 0;
   for (int i = 0; i < sampleInfo->nBins; ++i) {
     int indx = sampleInfo->indx[i];
@@ -190,7 +190,7 @@ void CalculateSumNBins(GsampleInfo* sampleInfo) {
   }
 }
 
-void CalculateNBins(GsampleInfo* sampleInfo, const int linesRead) {
+void CalculateNBins(GsampleInfo *sampleInfo, const int linesRead) {
   // CALCULA EL No DE LINEAS FINALES A PARTIR DEL NUMERO INICIAL
   double producto = log10(sampleInfo->nBin[sampleInfo->indx[linesRead - 1]]);
   producto = producto - 3.0;
@@ -205,12 +205,12 @@ void CalculateNBins(GsampleInfo* sampleInfo, const int linesRead) {
   if (sampleInfo->nBins > 60) {
     sampleInfo->nBins = 60;
   }
-  if ((sampleInfo->nBins < 30) && (linesRead>30))  {
+  if ((sampleInfo->nBins < 30) && (linesRead > 30)) {
     sampleInfo->nBins = 30;
   }
 }
 
-void CalculateAverageNe(GsampleInfo* sampleInfo) {
+void CalculateAverageNe(GsampleInfo *sampleInfo) {
   int conta = 0;
   double dpob, Ne0;
   sampleInfo->NeMed = 0;
@@ -218,21 +218,24 @@ void CalculateAverageNe(GsampleInfo* sampleInfo) {
   for (int i = 2; i < 8; ++i) {
     int indx = sampleInfo->indx[i];
     if (sampleInfo->d2cObs[indx] > 0) {
-      if ((sampleInfo->haplotype == 1) || (sampleInfo->haplotype == 2)) {// haploides o diploides phased
-        dpob = (sampleInfo->d2cObs[indx] - sampleInfo->sampleZ3) \
-         / (sampleInfo->sampleZ2*sampleInfo->cValRep[indx] * sampleInfo->basecallcorrec);
-      } 
-      else { // diploides unphased
-        if (sampleInfo->mix){
-          dpob=sampleInfo->d2cObs[indx];
+      if ((sampleInfo->haplotype == 1) ||
+          (sampleInfo->haplotype == 2)) { // haploides o diploides phased
+        dpob = (sampleInfo->d2cObs[indx] - sampleInfo->sampleZ3) /
+               (sampleInfo->sampleZ2 * sampleInfo->cValRep[indx] *
+                sampleInfo->basecallcorrec);
+      } else { // diploides unphased
+        if (sampleInfo->mix) {
+          dpob = sampleInfo->d2cObs[indx];
+        } else {
+          dpob = 4.0 * (sampleInfo->d2cObs[indx] - sampleInfo->sampleZ1) /
+                 (sampleInfo->cValRep[indx] * sampleInfo->sampleZ2 *
+                  sampleInfo->basecallcorrec);
         }
-        else{
-        dpob = 4.0 * (sampleInfo->d2cObs[indx] - sampleInfo->sampleZ1 ) /
-               (sampleInfo->cValRep[indx] * sampleInfo->sampleZ2 * sampleInfo->basecallcorrec);
-        } 
       }
-      Ne0 = 2 * (sampleInfo->onePluscValSq[indx] / (dpob * 2 * (1 - sampleInfo->oneMinuscValSq[indx])) -
-                 1.1 * sampleInfo->oneMinuscValSq[indx] / (1 - sampleInfo->oneMinuscValSq[indx]));
+      Ne0 = 2 * (sampleInfo->onePluscValSq[indx] /
+                     (dpob * 2 * (1 - sampleInfo->oneMinuscValSq[indx])) -
+                 1.1 * sampleInfo->oneMinuscValSq[indx] /
+                     (1 - sampleInfo->oneMinuscValSq[indx]));
       if (Ne0 > 10) {
         sampleInfo->NeMed += Ne0;
         conta++;
@@ -240,7 +243,7 @@ void CalculateAverageNe(GsampleInfo* sampleInfo) {
     }
   }
   // POBLACIONES SUBDIVIDIDAS:
-  sampleInfo->NeMed = 1000;
+  // sampleInfo->NeMed = 1000;
   // FIN POBLACIONES SUBDIVIDIDAS
   if (conta > 0) {
     sampleInfo->NeMed = sampleInfo->NeMed / conta;
@@ -255,7 +258,7 @@ void CalculateAverageNe(GsampleInfo* sampleInfo) {
 // TODO(me): Check if closing the file is really needed when using
 //           ifstream
 int ProcessFile(std::string fichero, double clow, double chigh,
-                GsampleInfo* sampleInfo) {
+                GsampleInfo *sampleInfo) {
   /*
    * Carga el archivo d2 y prepara la estructura sampleInfo con los
    * parámetros de la muestra
@@ -291,8 +294,7 @@ int ProcessFile(std::string fichero, double clow, double chigh,
         }
         sampleInfo->haplotype = static_cast<int>(col0);
         nLinea++;
-      } 
-      else if (nLinea == -3) {
+      } else if (nLinea == -3) {
         // On the second line extract more important stuff
         if (!(iss >> col0)) {
           std::cerr << " Format error in file " << fichero << std::endl;
@@ -307,45 +309,54 @@ int ProcessFile(std::string fichero, double clow, double chigh,
         sampleInfo->sampleSize = col0;
         //        std::cout<< sampleInfo->sampleSize<< std::endl;
 
-        // Si popInfo->haplotype = 0 (dips fase desconocida) ó = 3 (pseudohaploides) :
+        // Si popInfo->haplotype = 0 (dips fase desconocida) ó = 3
+        // (pseudohaploides) :
         //      sampleInfo->sampleSize indica el numero de individuos diploides
         // Si popInfo->haplotype = 1 (haploides) :
         //      sampleInfo->sampleSize indica el numero de individuos haploides
         // Si popInfo->haplotype = 2 (diploides phased) :
-        //      sampleInfo->sampleSize indica el DOBLE del numero de individuos diploides
+        //      sampleInfo->sampleSize indica el DOBLE del numero de individuos
+        //      diploides
         double sample_size_h = 2 * sampleInfo->sampleSize;
 
-        // sampleInfo->sampleX y sampleInfo->sampleY solo se usan en diploides con fase desconocida
-        sampleInfo->sampleX =
-            (Cube<double>(sample_size_h - 2.0) +
-             8.0 / 5.0 * Square<double>(sample_size_h - 2.0) +
-             4 * (sample_size_h - 2.0)) /
-            (Cube<double>(sample_size_h - 1.0) + Square<double>(sample_size_h - 1.0));
-        sampleInfo->sampleY = (2.0 * sample_size_h - 4.0) / Square<double>(sample_size_h - 1.0);
+        // sampleInfo->sampleX y sampleInfo->sampleY solo se usan en diploides
+        // con fase desconocida
+        sampleInfo->sampleX = (Cube<double>(sample_size_h - 2.0) +
+                               8.0 / 5.0 * Square<double>(sample_size_h - 2.0) +
+                               4 * (sample_size_h - 2.0)) /
+                              (Cube<double>(sample_size_h - 1.0) +
+                               Square<double>(sample_size_h - 1.0));
+        sampleInfo->sampleY =
+            (2.0 * sample_size_h - 4.0) / Square<double>(sample_size_h - 1.0);
 
         // sampleInfo->sampleZ1 solo se usa en pseudohaploides.
-        sampleInfo->sampleZ1 = (1.0 + sampleInfo->sampleSize) / (sampleInfo->sampleSize * (sampleInfo->sampleSize - 1.0));
+        sampleInfo->sampleZ1 =
+            (1.0 + sampleInfo->sampleSize) /
+            (sampleInfo->sampleSize * (sampleInfo->sampleSize - 1.0));
 
-        // sampleInfo->sampleZ2 solo se usa en pseudohaploides, dips phased y haploides, Aunque sampleSize está
-        // multiplicado por dos en dips phased y haploides.
-        sampleInfo->sampleZ2 = 1.0 - 0.2 / (sampleInfo->sampleSize - 1.0); // Corregido error. Era 0.8
+        // sampleInfo->sampleZ2 solo se usa en pseudohaploides, dips phased y
+        // haploides, Aunque sampleSize está multiplicado por dos en dips phased
+        // y haploides.
+        sampleInfo->sampleZ2 = 1.0 - 0.2 / (sampleInfo->sampleSize -
+                                            1.0); // Corregido error. Era 0.8
 
-        // sampleInfo->sampleZ4 solo se usan en dips phased y haploides, sampleSize está
-        // multiplicado por dos en dips phased y haploides.
+        // sampleInfo->sampleZ4 solo se usan en dips phased y haploides,
+        // sampleSize está multiplicado por dos en dips phased y haploides.
         // sampleInfo->sampleZ3 solo se usa con coverage>0
         sampleInfo->sampleZ3 = 1.0 / (sampleInfo->sampleSize - 1.0);
-        if ((sampleInfo->haplotype==2)){
-          sampleInfo->sampleZ4 = (1.0+sampleInfo->fVal) / (sampleInfo->sampleSize - 1.0);
-        }
-        else{
+        if ((sampleInfo->haplotype == 2)) {
+          sampleInfo->sampleZ4 =
+              (1.0 + sampleInfo->fVal) / (sampleInfo->sampleSize - 1.0);
+        } else {
           sampleInfo->sampleZ4 = (1.0) / (sampleInfo->sampleSize - 1.0);
         }
         // sampleZ5 es para low coverage o pseudohaploides
-        sampleInfo->sampleZ5 = (sampleInfo->sampleSize + 1.0) / (sampleInfo->sampleSize - 1.0)/sampleInfo->sampleSize;
+        sampleInfo->sampleZ5 = (sampleInfo->sampleSize + 1.0) /
+                               (sampleInfo->sampleSize - 1.0) /
+                               sampleInfo->sampleSize;
 
         nLinea++;
-      } 
-      else if (nLinea == -2) {
+      } else if (nLinea == -2) {
         if (!(iss >> col0)) {
           std::cerr << " Format error in file " << fichero << std::endl;
           entrada.close();
@@ -359,8 +370,7 @@ int ProcessFile(std::string fichero, double clow, double chigh,
         }
         sampleInfo->fValSample = col0;
         nLinea++;
-      } 
-      else if (nLinea == -1) {
+      } else if (nLinea == -1) {
         if (!(iss >> col0)) {
           std::cerr << " Format error in file " << fichero << std::endl;
           entrada.close();
@@ -368,8 +378,7 @@ int ProcessFile(std::string fichero, double clow, double chigh,
         }
         sampleInfo->binExtra = col0;
         nLinea++;
-      } 
-      else {
+      } else {
         if (!(iss >> col0 >> col1 >> col2)) {
           std::cerr << " Format error in file " << fichero << std::endl;
           entrada.close();
@@ -402,17 +411,15 @@ int ProcessFile(std::string fichero, double clow, double chigh,
 
   entrada.close();
 
-  if (sampleInfo->haplotype==0){
+  if (sampleInfo->haplotype == 0) {
     sampleInfo->fVal =
-      (1.0 + sampleInfo->fValSample * (2.0 * sampleInfo->sampleSize- 1.0)) /
-      (2.0 * sampleInfo->sampleSize - 1.0 + sampleInfo->fValSample);
-  }
-  else if(sampleInfo->haplotype==2){
+        (1.0 + sampleInfo->fValSample * (2.0 * sampleInfo->sampleSize - 1.0)) /
+        (2.0 * sampleInfo->sampleSize - 1.0 + sampleInfo->fValSample);
+  } else if (sampleInfo->haplotype == 2) {
     sampleInfo->fVal =
-     (1.0 + sampleInfo->fValSample * (sampleInfo->sampleSize - 1.0)) /
-      (sampleInfo->sampleSize - 1.0 + sampleInfo->fValSample);
-  }
-  else{
+        (1.0 + sampleInfo->fValSample * (sampleInfo->sampleSize - 1.0)) /
+        (sampleInfo->sampleSize - 1.0 + sampleInfo->fValSample);
+  } else {
     sampleInfo->fVal = 0;
   }
 
