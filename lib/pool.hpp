@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <string>
 #include "./bicho.hpp"
+#include "./ga_config.hpp"
 
 typedef struct {
   int gmax[3];
@@ -28,6 +29,8 @@ typedef struct {
   MutParams mutParams;
   int numGenerations;
   int numChildren;
+  bool heavyTailActive;
+  GAConfig gaConfig;
 } Pool;
 
 void SetInitialPoolParameters(Pool* pool, double mincval);

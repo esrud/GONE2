@@ -8,6 +8,7 @@
 #include <random>
 
 #include "./constants.hpp"
+#include "./ga_config.hpp"
 #include "./simplemath.hpp"
 #include "rng/Xoshiro256plus.h"
 
@@ -16,7 +17,7 @@ typedef struct {
   bool mix;
   int binExtra;
   double coveragecorrec;
-  double ngensamplingcorrec[MAXIND];
+  double ngensamplingcorrec[kNumLinMax];
   double basecallcorrec;
   double hetEsp;
   double hetEspAll;
@@ -25,14 +26,15 @@ typedef struct {
   double sampleSize;
   double fValSample;
   double fVal;
-  double nBin[MAXIND];
-  double cVal[MAXIND];
-  double oneMinuscValSq[MAXIND];
-  double onePluscValSq[MAXIND];
-  double cValSq[MAXIND];
-  double cValRep[MAXIND];
-  double d2cObs[MAXIND];
-  int indx[MAXIND];
+  double nBin[kNumLinMax];
+  double cVal[kNumLinMax];
+  double oneMinuscValSq[kNumLinMax];
+  double oneMinuscValSqPow[kNumLinMax][kNumGenMax];
+  double onePluscValSq[kNumLinMax];
+  double cValSq[kNumLinMax];
+  double cValRep[kNumLinMax];
+  double d2cObs[kNumLinMax];
+  int indx[kNumLinMax];
   long int nBins;
   double sumNBin;
   double cValMin;
@@ -45,11 +47,15 @@ typedef struct {
   double sampleZ4;
   double sampleZ5;
   double correccion;
+  bool structuredMix;
+  double structScale[kNumLinMax];
+  double structOffset[kNumLinMax];
   long int sizeBins;
   int muestraSalida;
   bool hayrecentbins;
   double NeMed;
   uint8_t flags;
+  GAConfig gaConfig;
 } GsampleInfo;
 
 int ProcessFile(std::string fichero, double clow, double chigh,
@@ -60,9 +66,4 @@ int CompressSample(GsampleInfo* sampleInfo, int linesRead);
 void CalculateSumNBins(GsampleInfo* sampleInfo);
 void CalculateAverageNe(GsampleInfo* sampleInfo);
 
-//std::random_device seed;
-// mersenne_twister_engine 64bit (very good but very big)
-//extern std::mt19937_64 rng;
-// uses the result of the engine to generate uniform dist
-//extern std::uniform_real_distribution<> uniforme01;
-extern Xoshiro256plus xprng;
+extern thread_local Xoshiro256plus xprng;

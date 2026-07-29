@@ -9,8 +9,10 @@ typedef struct {
   int nSeg;
   int segBl[kNumLinMax];
   double NeBl[kNumLinMax];
-  double d2cPred[kNumLinMax];
 } Bicho;
 
 
-double CalculaSC(Bicho* bicho, GsampleInfo* sampleInfo);
+double CalculaSC(Bicho* bicho, GsampleInfo* sampleInfo, double* d2cPred);
+double CalculaSCScoreOnly(Bicho* bicho, GsampleInfo* sampleInfo);
+double CalculaSCScoreCutoff(Bicho* bicho, GsampleInfo* sampleInfo,
+                            double cutoff);

@@ -1,20 +1,32 @@
 #pragma once
 
-// Uncomment the next line if you use openmp ~13.0
-//#define LATEST_OMP
+#include <climits>
+
 #ifndef MAXLOCI
 #define MAXLOCI 2000000
 #endif
 #ifndef MAXIND
 #define MAXIND 2000
 #endif
+static_assert(MAXLOCI >= 1 && MAXLOCI <= INT_MAX,
+              "MAXLOCI must be in [1, INT_MAX]");
+static_assert(MAXIND >= 1 && MAXIND <= INT_MAX,
+              "MAXIND must be in [1, INT_MAX]");
 #define MAXCROMO 1000
 #define MAXBINS 2000
+#ifndef GONE_ROUNDS
 #define GONE_ROUNDS 50
+#endif
+#ifndef GA_BIN_WEIGHTED
+#define GA_BIN_WEIGHTED 1
+#endif
 #define MAXDIST 100000
 
-#define MAX_POPULATION 1000
-#define kNumLinMax 2000
+#define MAX_POPULATION 128
+#define kNumLinMax 256
+#define kMaxD2PredBins 64
+static_assert(kNumLinMax >= 132, "kNumLinMax must cover transient GA splices");
+static_assert(kMaxD2PredBins >= 60, "kMaxD2PredBins must cover d2 bins");
 #define kNumGenMax 2000
 #define kResolucion 3
 #define kMuestraSalida 10
@@ -27,7 +39,9 @@
 
 #define kNumDesInicio 3000
 #define kNumDes 1000
+#ifndef kNumGenerations
 #define kNumGenerations 750
+#endif
 #define kTopeSalto 9.0
 #define kInvTopeSalto (1.0 / kTopeSalto)
 #define kTopeSalto2 50.0
@@ -49,10 +63,8 @@
 #define FLAG_NBINS 1
 #define FLAG_POR_BLOQUES true
 
-
 #define DEFAULT_BIN_SIZE 10000
 #define MAX_NE_SIZE 10000000.0
 #define MIN_NE_SIZE 1.0
-
 
 #define MAX_DOUBLE std::numeric_limits<double>::max()

@@ -40,6 +40,12 @@ typedef struct {
   long int nxc[MAXBINS];
   double d2[MAXBINS];
   double xc[MAXBINS];
+  bool structuredMix;
+  double structScale[MAXBINS];
+  double structOffset[MAXBINS];
+  double mixBinD2pob[MAXBINS];
+  double mixAnchorD2pob;
+  double mixAnchorD2obs;
   bool hayrecentbins;
   int shuffledIndi[MAXIND];
   int shuffledLoci[MAXLOCI];
@@ -61,23 +67,16 @@ typedef struct{
   double d2spred[MAXBINS];
 }PopulationInfoMix;
 
-void diff(SampleInfo* s1, SampleInfo* s2);
 void CalculateFrequencies(PopulationInfo* popInfo, SampleInfo* sampleInfo);
 void CalculateF(SampleInfo* sampleInfo, PopulationInfo* popInfo);
 bool CalculateHeterozigosity(PopulationInfo* popInfo, SampleInfo* sampleInfo);
-bool CalculateKinshipDistribution(PopulationInfo* popInfo,
-                                  SampleInfo* sampleInfo);
 
 void CalculateD2Parallel(PopulationInfo* popInfo, SampleInfo* sampleInfo,
                  AppParams* params);
-//void CalculateD2ParallelFst(std::string fichero,PopulationInfoMix* popInfoMix, PopulationInfo* popInfo, SampleInfo* sampleInfo,
- //                AppParams* params);
 void CalculateD2ParallelFst(
-  std::string fichero, PopulationInfoMix* popInfoMix,
+  PopulationInfoMix* popInfoMix,
   PopulationInfo* popInfo, SampleInfo* sampleInfo,
   AppParams* params);
-void CalculateD2GPU(PopulationInfo* popInfo, SampleInfo* sampleInfo,
-                 AppParams* params);
 double FixMixEcuacion05link(int* ps,double* kk2,double* kk4,double numIndi, double efe, int haplotype, double basecallcorrec, double Fst, double* m, double* Wt,double* Dw2,double* Db2, double* DbDw, double cc,double* d2spred,double d2sobs, double KK);
 void CalculaOtros(double* mind2dif,double* m, double Fst, double Ne, int* nsubs,
   double* Dw2,double* Db2, double* DbDw, double* d2spred2, int* ps,double* kk2,double* kk4, double* d2p05);

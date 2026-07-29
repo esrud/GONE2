@@ -23,6 +23,7 @@ typedef struct {
   double basecallcorrec;
   double currentNe;
   double m;
+  int    ps;
   double propMiss;
   double Mtot;
   double Mbtot;

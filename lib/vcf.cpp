@@ -1,27 +1,42 @@
 #include "vcf.hpp"
 
+namespace {
+struct VcfAlleleTable {
+  bool ok[256];
+  constexpr VcfAlleleTable() : ok{} {
+    for (const char* p = "AGCT,agct"; *p; ++p) {
+      ok[static_cast<unsigned char>(*p)] = true;
+    }
+  }
+};
+const VcfAlleleTable kVcfAllele;
+// Test whether a character is an accepted VCF allele symbol.
+// Params: c — allele character.
+// Returns: true if c is a valid allele code, else false.
+inline bool IsValidVcfAllele(char c) {
+  return kVcfAllele.ok[static_cast<unsigned char>(c)];
+}
+}
+
+// Read genotype data from a VCF file into popInfo (genotype matrix, SNP
+// positions, chromosomes).
+// Params: fichVcf — path to the .vcf file; popInfo — population struct
+//   filled in place.
+// Returns: true on success, false if the file can't be read or is malformed.
 bool ReadVcf(std::string fichVcf, PopulationInfo *popInfo) {
-  /*
-   * Takes as input the file name and a pointer to the population
-   * matrix and returns if the file was processed correcty
-   */
   char base1, base2;
-  int contaIndBase = 0, nline=0, i, j;
+  int contaIndBase = 0, nline = 0, i, j;
   int conta = 0, posi = 0, posi2 = 0, longi = 0;
   std::string line;
   std::string cromocod;
   std::string cromocodback = "laksjhbqne";
-  std::vector<int> rangocromo(MAXCROMO);
-  std::vector<char> base(MAXLOCI);
+  std::vector<int>    rangocromo(MAXCROMO);
+  std::vector<char>   base(MAXLOCI);
   std::vector<double> chrnum(MAXCROMO);
   std::vector<double> chrprop(MAXCROMO);
-  std::string str_vcf = "AGCT,agct";
-  std::string str_base = "";
-  bool rightletter,hayalelos;
+  bool hayalelos;
 
-  // READING .vcf DATA:
   std::ifstream entrada;
-  // Bucle de lectura del fichero tped
   entrada.open(fichVcf, std::ios::in);
   if (!entrada.good()) {
     std::cerr << "Could not open \"" << fichVcf << "\". Does the file exist?"
@@ -44,7 +59,6 @@ bool ReadVcf(std::string fichVcf, PopulationInfo *popInfo) {
     }
     conta = 0;
     posi = 0;
-    // chr name
     posi2 = posi;
     posi = static_cast<int>(line.find_first_of("\t", posi2));
     if (posi < 0) {
@@ -77,42 +91,41 @@ bool ReadVcf(std::string fichVcf, PopulationInfo *popInfo) {
         ++conta;
     }
 
-    // Mira el alelo REF
-    posi2=posi;
-    posi=int(line.find_first_of("\t",posi2));
-    j=posi-posi2;
-    rightletter=true;
-    hayalelos=true;
-    for (i=0;i<j;++i){
-        str_base=line.substr(posi2+i,1);
-        if (str_base=="."){
-            hayalelos=false;
-        }
-        else if (str_vcf.find(str_base) == std::string::npos){
-            rightletter=false;
-            break;
-        }
+    posi2 = posi;
+    posi  = int(line.find_first_of("\t", posi2));
+    j = posi - posi2;
+    bool rightletter = true;
+    hayalelos = true;
+    for (i = 0; i < j; ++i) {
+      const char c = line[posi2 + i];
+      if (c == '.') {
+        hayalelos = false;
+      } else if (!IsValidVcfAllele(c)) {
+        rightletter = false;
+        break;
+      }
     }
     if (!rightletter) {
-        std::cerr << "Wrong reference allele in line "<<nline<<" of vcf file. Only bases A, G, C and T (case-insensitive) are allowed." << std::endl;
-        exit(EXIT_FAILURE);
+      std::cerr << "Wrong reference allele in line " << nline
+                << " of vcf file. Only bases A, G, C and T "
+                   "(case-insensitive) are allowed."
+                << std::endl;
+      exit(EXIT_FAILURE);
     }
     ++posi;
     ++conta;
 
-    // Mira el alelo ALT
-    posi2=posi;
-    posi=int(line.find_first_of("\t",posi2));
-    j=posi-posi2;
-    for (i=0;i<j;++i){
-        str_base=line.substr(posi2+i,1);
-        if (str_base=="."){
-            hayalelos=false;
-        }
-        else if (str_vcf.find(str_base) == std::string::npos){
-            rightletter=false;
-            break;
-        }
+    posi2 = posi;
+    posi  = int(line.find_first_of("\t", posi2));
+    j = posi - posi2;
+    for (i = 0; i < j; ++i) {
+      const char c = line[posi2 + i];
+      if (c == '.') {
+        hayalelos = false;
+      } else if (!IsValidVcfAllele(c)) {
+        rightletter = false;
+        break;
+      }
     }
     if (!rightletter) {
         std::cerr << "Wrong alternative allele in line "<<nline<<" of vcf file (maybe also in other lines). Only bases A, G, C and T (case-insensitive) are allowed." << std::endl;
@@ -131,20 +144,16 @@ bool ReadVcf(std::string fichVcf, PopulationInfo *popInfo) {
       ++posi;
       ++conta;
     }
-    // Mira si la posicion 8 es GT (genotipo)
     bool haygenotipos = line.substr(posi, 2) == "GT";
 
-    // Lee los  genotipos:
     if (haygenotipos && hayalelos) {
-      // contabiliza el cromosoma que habia leido al principio de la linea
       if (cromocod != cromocodback) {
         cromocodback = cromocod;
         rangocromo[ncromos] = contalines;
         ++ncromos;
       }
       popInfo->cromo[contalines] = ncromos;
-      ++contalines;  // para crom
-      // Avanza hasta el primer genotipo:
+      ++contalines;
       posi2 = posi;
       posi = static_cast<int>(line.find_first_of("\t", posi2));
       if (posi < 0) {
@@ -153,12 +162,14 @@ bool ReadVcf(std::string fichVcf, PopulationInfo *popInfo) {
       }
       ++posi;
       ++conta;
-      // empieza a leer genotipos
+      if (nLoci >= MAXLOCI) {
+        std::cerr << "Reached max number of loci (" << MAXLOCI << ")"
+                  << std::endl;
+        return false;
+      }
       nIndi = 0;
-      // asigna genot.
       while (posi < longi) {
         base1 = line.at(posi);
-        // Haplotype check
         if (popInfo->haplotype != 1) {
           posi2 = posi;
           posi = line.find_first_of("/|", posi2);
@@ -170,6 +181,11 @@ bool ReadVcf(std::string fichVcf, PopulationInfo *popInfo) {
         } else {
           base2 = base1;
         }
+        if ((popInfo->haplotype == 2 ? nIndi + 1 : nIndi) >= MAXIND) {
+          std::cerr << "Reached limit of sample size (" << MAXIND << ")"
+                    << std::endl;
+          return false;
+        }
         if ((base1 != '.') && (base2 != '.')) {
           if (base[nLoci] == '\0') {
             base[nLoci] = base1;
@@ -178,8 +194,6 @@ bool ReadVcf(std::string fichVcf, PopulationInfo *popInfo) {
           base2 = base2 != base[nLoci] ? 'X' : base[nLoci];
 
           if ((popInfo->haplotype == 0) || (popInfo->haplotype == 3)) {
-            // Diploides Fase desconocida y Pseudohaploides
-            // 0:homo ref, 1:het, 2:homo noref
             if (base1 == base2) {
               popInfo->indi[nIndi][nLoci] =
                 base1 == base[nLoci] ? 0 : 2;
@@ -188,11 +202,9 @@ bool ReadVcf(std::string fichVcf, PopulationInfo *popInfo) {
             }
           } 
           else if ((popInfo->haplotype == 1)) {
-            // Haploides 
             popInfo->indi[nIndi][nLoci] = (base1 == base[nLoci] ? 0 : 2);
           } 
           else {
-            // Fase conocida (2)
             popInfo->indi[nIndi][nLoci] =
               base1 == base[nLoci] ? 0 : 2;
             popInfo->indi[nIndi + 1][nLoci] =
@@ -200,11 +212,8 @@ bool ReadVcf(std::string fichVcf, PopulationInfo *popInfo) {
           }
         } 
         else {
-          // '9' = Genotipo sin asignar
-          // Fase desconocida, haploides y pseudohaploides
           popInfo->indi[nIndi][nLoci] = 9;
           if (popInfo->haplotype == 2) {
-            // Fase conocida
             popInfo->indi[nIndi + 1][nLoci] = 9;
           }
         }
@@ -216,7 +225,7 @@ bool ReadVcf(std::string fichVcf, PopulationInfo *popInfo) {
         ++posi;
 
         nIndi++;
-        if (popInfo->haplotype == 2){// Fase Conocida son el doble de individuos
+        if (popInfo->haplotype == 2){
           nIndi++;
         }
         if (nIndi > MAXIND) {

@@ -1,180 +1,107 @@
 
 #include "sample.hpp"
 #include "pool.hpp"
+#include <cmath>
 #include <iomanip>
 #include <ios>
+#include <limits>
+#include <random>
+#include <sstream>
+#include <string>
 #include <string.h>
+#include <vector>
 
-void diff(SampleInfo *s1, SampleInfo *s2) {
-  /*
-   * Helper function to diff two SampleInfo structs
-  */
-  
-  if (s1->haplotype != s2->haplotype) {
-    std::cout << "Haplotype: " << s1->haplotype << " " << s2->haplotype << std::endl;
-  }
-  if (s1->mix != s2->mix) {
-    std::cout << "Mix: " << s1->mix << " " << s2->mix << std::endl;
-  }
-  if (s1->sampleSizeIndi != s2->sampleSizeIndi) {
-    std::cout << "SampleSizeIndi: " << s1->sampleSizeIndi << " " << s2->sampleSizeIndi << std::endl;
-  }
-  if (s1->numLoci != s2->numLoci) {
-    std::cout << "NumLoci: " << s1->numLoci << " " << s2->numLoci << std::endl;
-  }
-  if (s1->numSegLoci != s2->numSegLoci) {
-    std::cout << "NumSegLoci: " << s1->numSegLoci << " " << s2->numSegLoci << std::endl;
-  }
-  if (s1->numSNPs != s2->numSNPs) {
-    std::cout << "NumSNPs: " << s1->numSNPs << " " << s2->numSNPs << std::endl;
-  }
-  if (s1->binMax != s2->binMax) {
-    std::cout << "binMax: " << s1->binMax << " " << s2->binMax << std::endl;
-  }
-  if (s1->numIndiEff != s2->numIndiEff) {
-    std::cout << "NumIndiEff: " << s1->numIndiEff << " " << s2->numIndiEff << std::endl;
-  }
-  if (s1->increW != s2->increW) {
-    std::cout << "IncreW: " << s1->increW << " " << s2->increW << std::endl;
-  }
-  if (s1->f != s2->f) {
-    std::cout << "f: " << s1->f << " " << s2->f << std::endl;
-  }
-  if (s1->hetpq != s2->hetpq) {
-    std::cout << "Hetpq: " << s1->hetpq << " " << s2->hetpq << std::endl;
-  }
-  if (s1->hetAvg != s2->hetAvg) {
-    std::cout << "HetAvg: " << s1->hetAvg << " " << s2->hetAvg << std::endl;
-  }
-  if (s1->hetEspAll != s2->hetEspAll) {
-    std::cout << "HetEspAll: " << s1->hetEspAll << " " << s2->hetEspAll << std::endl;
-  }
-  if (s1->hetEsp != s2->hetEsp) {
-    std::cout << "HetEsp: " << s1->hetEsp << " " << s2->hetEsp << std::endl;
-  }
-  if (s1->hetAvgAll != s2->hetAvgAll) {
-    std::cout << "HetAvgAll: " << s1->hetAvgAll << " " << s2->hetAvgAll << std::endl;
-  }
-  if (s1->hetVar != s2->hetVar) {
-    std::cout << "HetVar: " << s1->hetVar << " " << s2->hetVar << std::endl;
-  }
-  if (s1->hetSesg != s2->hetSesg) {
-    std::cout << "HetSesg: " << s1->hetSesg << " " << s2->hetSesg << std::endl;
-  }
-  if (s1->parentAvg != s2->parentAvg) {
-    std::cout << "ParentAvg: " << s1->parentAvg << " " << s2->parentAvg << std::endl;
-  }
-  
-  bool flag_frec = false;
-  bool flag_homo = false;
-  bool flag_segrega = false;
-  bool flag_shufLoci = false;
-  for (size_t i = 0; i < MAXLOCI; ++i) {
-    if (!flag_frec && s1->frec[i] != s2->frec[i]) {
-      std::cout << "Frec is different" << std::endl;
-      flag_frec = true;
-    }
-    if (!flag_homo && s1->homo[i] != s2->homo[i]) {
-      std::cout << "Homo is different" << std::endl;
-      flag_homo = true;
-    }
-    if (!flag_segrega && s1->segrega[i] != s2->segrega[i]) {
-      std::cout << "Segrega is different" << std::endl;
-      flag_segrega = true;
-    }
-    if (!flag_shufLoci && s1->shuffledLoci[i] != s2->shuffledLoci[i]) {
-      std::cout << "ShuffledLoci is different" << std::endl;
-      flag_shufLoci = true;
-    }
-  }
-  bool flag_het = false;
-  bool flag_parent = false;
-  bool flag_shufIndi = false;
-  for (size_t i = 0; i < MAXIND; ++i) {
-    if (!flag_het && s1->het[i] != s2->het[i]) {
-      std::cout << "Het is different" << std::endl;
-      flag_het = true;
-    }
-    if (!flag_parent && s1->parent[i] != s2->parent[i]) {
-      std::cout << "Parent is different" << std::endl;
-      flag_parent = true;
-    }
-    if (!flag_shufIndi && s1->shuffledIndi[i] != s2->shuffledIndi[i]) {
-      std::cout << "ShuffledIndi is different" << std::endl;
-      flag_shufIndi = true;
-    }
-  }
+// Count the set bits in a 64-bit word.
+// Params: value — the word.
+// Returns: the number of 1 bits.
+static inline int PopCount64(uint64_t value) {
+  return __builtin_popcountll(value);
+}
 
-  bool flag_nxc = false;
-  bool flag_xc = false;
-  bool flag_d2 = false;
-  for (size_t i = 0; i < MAXBINS; ++i) {
-    if (!flag_nxc && s1->nxc[i] != s2->nxc[i]) {
-      std::cout << "Nxc is different" << std::endl;
-      flag_nxc = true;
+// Population-pooled MAF pass mask. Mirrors CalculateFrequencies' allele
+// counting but scans every individual in popInfo->indi rather than the
+// shuffled subsample, so the locus set under -Q is identical across
+// -R replicates and retries — eliminates the run-to-run flips caused by
+// the per-shuffle pooled-frequency MAF gate.
+// Params: popInfo — full genotype matrix (all individuals) scanned; maf —
+//   minor-allele-frequency threshold; outMask — per-locus pass/fail flags
+//   written here (true = passes the MAF gate).
+static void BuildPopMafMask(const PopulationInfo* popInfo, double maf,
+                            bool* outMask) {
+  for (int locus = 0; locus < popInfo->numLoci; ++locus) {
+    double sumDosage = 0;
+    double contaAllele = 0;
+    if (popInfo->haplotype != 2) {
+      for (int i = 0; i < popInfo->numIndi; ++i) {
+        const uint8_t g = popInfo->indi[i][locus];
+        if (g < 9) {
+          sumDosage   += static_cast<double>(g);
+          contaAllele += 2.0;
+        }
+      }
+    } else {
+      for (int i = 0; i + 1 < popInfo->numIndi; i += 2) {
+        const uint8_t g1 = popInfo->indi[i    ][locus];
+        const uint8_t g2 = popInfo->indi[i + 1][locus];
+        if (g1 < 9 && g2 < 9) {
+          sumDosage   += static_cast<double>(g1) + static_cast<double>(g2);
+          contaAllele += 4.0;
+        }
+      }
     }
-    if (!flag_xc && s1->xc[i] != s2->xc[i]) {
-      std::cout << "xc is different" << std::endl;
-      flag_xc = true;
-    }
-    if (!flag_d2 && s1->d2[i] != s2->d2[i]) {
-      std::cout << "d2 is different" << std::endl;
-      flag_d2 = true;
+    if (contaAllele > 0) {
+      const double p = sumDosage / contaAllele;
+      outMask[locus] = (p > maf) && ((1.0 - p) > maf);
+    } else {
+      outMask[locus] = false;
     }
   }
 }
 
+// Compute the non-reference allele frequency and non-reference
+// homozygote frequency at each segregating locus in the sample. Marks
+// loci as segregating only when the allele frequency is strictly in
+// (0, 1) and at most 20% of genotype calls at that locus are missing.
+// Params: popInfo — genotype source (the shuffled subsample is used);
+//   sampleInfo — receives per-locus frequency/homozygote values, the
+//   segregating flags, and the segregating-locus count.
 void CalculateFrequencies(PopulationInfo* popInfo, SampleInfo* sampleInfo) {
-  // Calculo de frecuencia del alelo noref y de homo noref para todos los loci
-  // variables en la muestra
-  int i, j;
   double contaIndX = 0;
   int locus;
   int indi;
   double counter = 0;
-  int mincontaIndX;
-  uint8_t ff,gg;
+  uint8_t ff, gg;
 
-
-  // Looks like we need a reference to the shuffled array
-  sampleInfo->hetEsp=0;
-  mincontaIndX=int(float(sampleInfo->sampleSizeIndi)*2.0*(0.8));// 20% missing data
-  for (j = 0; j < sampleInfo->numLoci; ++j) {
+  sampleInfo->hetEsp = 0;
+  const int mincontaIndX = int(float(sampleInfo->sampleSizeIndi) * 2.0 * 0.8);
+  for (int j = 0; j < sampleInfo->numLoci; ++j) {
     locus = sampleInfo->shuffledLoci[j];
-    sampleInfo->frec[locus] = 0;
-    sampleInfo->homo[locus] = 0;
+    sampleInfo->frec[locus]    = 0;
+    sampleInfo->homo[locus]    = 0;
     sampleInfo->segrega[locus] = false;
     contaIndX = 0;
-    if (popInfo->haplotype!=2){
-      for (i = 0; i < sampleInfo->sampleSizeIndi; i++) {
+    if (popInfo->haplotype != 2) {
+      for (int i = 0; i < sampleInfo->sampleSizeIndi; i++) {
         indi = sampleInfo->shuffledIndi[i];
         ff = popInfo->indi[indi][locus];
         if (ff < 9) {
-          // acumulador de frecuencia del alelo noref
           sampleInfo->frec[locus] += static_cast<double>(ff);
-          if (ff == 2) {
-            ++sampleInfo->homo[locus];
-          }  // acumulador de homo noref
+          if (ff == 2) ++sampleInfo->homo[locus];
           ++(++contaIndX);
         }
       }
-    }
-    else{
-      for (i = 0; i < sampleInfo->sampleSizeIndi; ++(++i)) {
+    } else {
+      for (int i = 0; i < sampleInfo->sampleSizeIndi; ++(++i)) {
         indi = sampleInfo->shuffledIndi[i];
         ff = popInfo->indi[indi][locus];
-        indi = sampleInfo->shuffledIndi[i+1];
+        indi = sampleInfo->shuffledIndi[i + 1];
         gg = popInfo->indi[indi][locus];
         if ((ff < 9) and (gg < 9)) {
-          // acumulador de frecuencia del alelo noref
           sampleInfo->frec[locus] += static_cast<double>(ff);
           ++(++contaIndX);
-          // acumulador de frecuencia del alelo noref
           sampleInfo->frec[locus] += static_cast<double>(gg);
           ++(++contaIndX);
-          if ((ff == 2) && (gg ==2)) {
-            ++(++sampleInfo->homo[locus]);
-          }  // acumulador de homo noref
+          if ((ff == 2) && (gg == 2)) ++(++sampleInfo->homo[locus]);
         }
       }
     }
@@ -183,50 +110,60 @@ void CalculateFrequencies(PopulationInfo* popInfo, SampleInfo* sampleInfo) {
       std::cerr << "There is no genotyping data for at least one SNP\n";
       exit(EXIT_FAILURE);
     }
-    if ((sampleInfo->frec[locus] > 0) && (contaIndX>=mincontaIndX) && (sampleInfo->frec[locus] < contaIndX)) { // excluded SNPs with > 20% of missing data
+    if ((sampleInfo->frec[locus] > 0) && (contaIndX >= mincontaIndX) &&
+        (sampleInfo->frec[locus] < contaIndX)) {
       ++sampleInfo->numSegLoci;
       sampleInfo->segrega[locus] = true;
       sampleInfo->frec[locus] /= contaIndX;
       sampleInfo->homo[locus] /= (contaIndX / 2.0);
-      sampleInfo->hetEsp+=2*sampleInfo->frec[locus]*(1-sampleInfo->frec[locus]);
-    }  // contador de segregantes
+      sampleInfo->hetEsp +=
+          2 * sampleInfo->frec[locus] * (1 - sampleInfo->frec[locus]);
+    }
     popInfo->avgNumIndiAnalyzed += static_cast<double>(contaIndX);
     counter++;
 
-    if (sampleInfo->numSegLoci >= sampleInfo->numLoci) {
-      break;
-    }
+    if (sampleInfo->numSegLoci >= sampleInfo->numLoci) break;
+  }
+  if (sampleInfo->numSegLoci == 0) {
+    std::cerr << " No segregating loci remain after filtering; cannot "
+                 "estimate Ne.\n";
+    exit(EXIT_FAILURE);
   }
   popInfo->avgNumIndiAnalyzed /= counter * 2.0;
   sampleInfo->hetEsp /= static_cast<double>(sampleInfo->numSegLoci);
-  sampleInfo->hetEspAll = sampleInfo->hetEsp * static_cast<double>(sampleInfo->numSegLoci) / static_cast<double>(sampleInfo->numLoci);
-  popInfo->hetEsp=sampleInfo->hetEsp;
+  sampleInfo->hetEspAll = sampleInfo->hetEsp *
+                          static_cast<double>(sampleInfo->numSegLoci) /
+                          static_cast<double>(sampleInfo->numLoci);
+  popInfo->hetEsp    = sampleInfo->hetEsp;
   popInfo->hetEspAll = sampleInfo->hetEspAll;
-
 }
 
+// Sample-level inbreeding coefficient f and the expected
+// heterozygosity hetpq = mean(2pq) over segregating loci.
+// Params: sampleInfo — reads per-locus frequencies/homozygote values,
+//   writes f and hetpq; popInfo — unused (kept for signature parity).
 void CalculateF(SampleInfo* sampleInfo, PopulationInfo* popInfo) {
-  // Calculo de f sample y control del exceso del límite de loci:
+  (void)popInfo;
   double acupq = 0;
   double acuPp2 = 0;
-  int locus;
   for (int j = 0; j < sampleInfo->numLoci; ++j) {
-    locus = sampleInfo->shuffledLoci[j];
+    const int locus = sampleInfo->shuffledLoci[j];
     if (sampleInfo->segrega[locus]) {
-      acuPp2 += (sampleInfo->homo[locus] -
-                 Square<double>(sampleInfo->frec[locus]));
-      acupq +=
-          (sampleInfo->frec[locus] * (1.0 - sampleInfo->frec[locus]));
+      acuPp2 +=
+          sampleInfo->homo[locus] - Square<double>(sampleInfo->frec[locus]);
+      acupq += sampleInfo->frec[locus] * (1.0 - sampleInfo->frec[locus]);
     }
   }
-  sampleInfo->f = acuPp2 / acupq;
+  sampleInfo->f     = acuPp2 / acupq;
   sampleInfo->hetpq = acupq / sampleInfo->numSegLoci;
 }
 
-
+// Compute the per-individual heterozygosity distribution and the sample's
+// expected/observed heterozygosity.
+// Params: popInfo — genotype source; sampleInfo — receives the
+//   heterozygosity statistics (het[], hetAvg/hetEsp, …).
+// Returns: true on success, false if the sample has no usable loci.
 bool CalculateHeterozigosity(PopulationInfo* popInfo, SampleInfo* sampleInfo) {
-    // Distribucion de heterocigosidades de los individuos (ver
-    // Medidas_de_Parent_y_Het.docx)
     int* pIndi = sampleInfo->shuffledIndi;
     int* pLocus;
 
@@ -247,7 +184,6 @@ bool CalculateHeterozigosity(PopulationInfo* popInfo, SampleInfo* sampleInfo) {
             if (sampleInfo->segrega[*pLocus]) {
               ff = popInfo->indi[*pIndi][*pLocus];
               if (ff == 1) {
-                // acumulador de heterocigosidad de cada indiv
                 ++hetIndi;
                 ++contaLocX;
               } else if (ff < 9) {
@@ -265,7 +201,7 @@ bool CalculateHeterozigosity(PopulationInfo* popInfo, SampleInfo* sampleInfo) {
           delete sampleInfo;
           return false;
         }
-        hetIndi /= contaLocX;  // het de cada individuo
+        hetIndi /= contaLocX;
         sampleInfo->hetAvg += hetIndi;
         ++pIndi;
       }
@@ -274,7 +210,7 @@ bool CalculateHeterozigosity(PopulationInfo* popInfo, SampleInfo* sampleInfo) {
       popInfo->hetAvg=sampleInfo->hetAvg;
       popInfo->hetAvgAll = sampleInfo->hetAvgAll;
     }
-    else{ // PHASED
+    else{
       sampleInfo->hetAvg = 0;
       for (i = 0; i < sampleInfo->sampleSizeIndi; ++(++i)) {
         double hetIndi=0;
@@ -287,7 +223,6 @@ bool CalculateHeterozigosity(PopulationInfo* popInfo, SampleInfo* sampleInfo) {
               ff = popInfo->indi[*pIndi][*pLocus];
               gg = popInfo->indi[*pIndi+1][*pLocus];
               if (ff+gg == 2) {
-                // acumulador de heterocigosidad de cada indiv
                 ++hetIndi;
                 ++contaLocX;
               } else if ((ff < 9) && (gg < 9)) {
@@ -305,7 +240,7 @@ bool CalculateHeterozigosity(PopulationInfo* popInfo, SampleInfo* sampleInfo) {
           delete sampleInfo;
           return false;
         }
-        hetIndi /= contaLocX;  // het de cada individuo
+        hetIndi /= contaLocX;
         sampleInfo->hetAvg += hetIndi;
         ++(++pIndi);
       }
@@ -318,69 +253,21 @@ bool CalculateHeterozigosity(PopulationInfo* popInfo, SampleInfo* sampleInfo) {
     return true;
 }
 
-bool CalculateKinshipDistribution(PopulationInfo* popInfo,
-                                  SampleInfo* sampleInfo) {
-  // TODO(me): this could all problaby done inside the heterozygosity
-  // calculation but the code would be much uglier. On the other side,
-  // performance
-  // Distribucion de parentescos de los individuos (ver
-  // Medidas_de_Parent_y_Het.docx)
-  double b = static_cast<double>(2 * sampleInfo->sampleSizeIndi - 1) /
-      static_cast<double>(2 * (sampleInfo->sampleSizeIndi - 1));
-  int* pIndi = sampleInfo->shuffledIndi;
-  int* pLocus;
-  int i, j;
-  double contaLocX;
-  double a, ff;
-  bool isSegLocus;
-  sampleInfo->parentAvg = 0;
-  for (i = 0; i < sampleInfo->sampleSizeIndi; ++i) {
-    sampleInfo->parent[*pIndi] = 0;
-    pLocus = sampleInfo->shuffledLoci;
-    contaLocX = 0;
-    // TODO(me): all this seems too convoluted. Since we know
-    // the number of segregating loci, we should be able to loop
-    // only through them and not have to do that while loop
-    // We could store the segregating loci in a separate array that
-    // holds the index to the locus in popInfo->indi[x][locus]
-    // We'll see how much of the performance is wasted in this loop
-    // Also, similarly, this should be possible with the heterozygosity loop
-    for (j = 0; j < sampleInfo->numSegLoci; ++j) {
-      isSegLocus = false;
-      while (!isSegLocus) {
-        if (sampleInfo->segrega[*pLocus]) {
-          ff = popInfo->indi[*pIndi][*pLocus];
-          if (ff < 9) {
-            ++contaLocX;
-            a = static_cast<double>(ff) / 2.0;
-            a -= sampleInfo->frec[*pLocus];
-            sampleInfo->parent[*pIndi] += Square<double>(a);
-          }
-          isSegLocus = true;
-        }
-        ++pLocus;
-      }
-    }
-    if (contaLocX < 100) {
-      std::cerr << "There are too few genotyping data for individual " << i
-                << std::endl;
-      delete sampleInfo;
-      delete popInfo;
-      return false;
-    }
-    sampleInfo->parent[*pIndi] /= contaLocX;
-    sampleInfo->parent[*pIndi] *= (2 * b / sampleInfo->hetpq);
-    sampleInfo->parentAvg += sampleInfo->parent[*pIndi];
-    ++pIndi;
-  }
-  sampleInfo->parentAvg /= sampleInfo->sampleSizeIndi;
+namespace {
 
-  return true;
+constexpr int kChartMaxGen = 150;
+
 }
 
+// Compute the observed LD (weighted squared correlation d²) between SNP
+// pairs across recombination-distance bins, in parallel over threads, and
+// write the per-bin results (pair counts, recombination rate, observed d²)
+// to the intermediate d² file used by the GA.
+// Params: popInfo — genotype source and genetic map; sampleInfo — receives
+//   the per-bin d² accumulators and sampling corrections; params — run
+//   configuration (thread count, distance window, filters).
 void CalculateD2Parallel(PopulationInfo* popInfo, SampleInfo* sampleInfo,
                  AppParams* params) {
-  // Calculo de D2:
 
   int* valid_idx = new int[popInfo->numLoci];
   int counter = 0;
@@ -400,7 +287,6 @@ void CalculateD2Parallel(PopulationInfo* popInfo, SampleInfo* sampleInfo,
 
   params->progress.InitCurrentTask(sampleInfo->numSegLoci - 1);
 
-  // Inicializamos la tabla de índices válidos (en los que segrega[x] es true)
   for (int idx = 0; idx < popInfo->numLoci; idx++) {
     if (sampleInfo->segrega[sampleInfo->shuffledLoci[idx]] &&
         (sampleInfo->frec[sampleInfo->shuffledLoci[idx]] > params->MAF) &&
@@ -410,10 +296,11 @@ void CalculateD2Parallel(PopulationInfo* popInfo, SampleInfo* sampleInfo,
       counter++;
     }
   }
+  if (params->MAF > 0) {
+    sampleInfo->numSegLoci = counter;
+  }
 
   gBase = 1.0 / (2.0 * params->hc);
-  // gBase = std::max((1.0 / (2.0 * params->hc)), 1.0);
-  //  binBase = trunc((gBase - 10.0) / 5.0) + 6.0;
 
   if (params->cMMb > 0) {
     for (i = 0; i < popInfo->numLoci; ++i) {
@@ -422,7 +309,6 @@ void CalculateD2Parallel(PopulationInfo* popInfo, SampleInfo* sampleInfo,
     popInfo->Mtot = params->cMMb * popInfo->Mbtot / 100;
   }
 
-  // Checking chomosome sizes 
   j=0;
   k=0;
   okchromsize=true;
@@ -433,7 +319,7 @@ void CalculateD2Parallel(PopulationInfo* popInfo, SampleInfo* sampleInfo,
         std::cerr << "Chromosome "<< popInfo->cromo[j]<<" is too small. All chromosomes must be larger than 20cM" << std::endl;
         okchromsize=false;        
       }
-      popInfo->chrsize[k] = popInfo->posiCM[i-1]-desde; // Se miden los cromosomas
+      popInfo->chrsize[k] = popInfo->posiCM[i-1]-desde;
       ++k;
       j=i;
       desde=popInfo->posiCM[j];
@@ -443,11 +329,11 @@ void CalculateD2Parallel(PopulationInfo* popInfo, SampleInfo* sampleInfo,
     exit(EXIT_FAILURE);
   }
 
-  if (params->distance == 0) {  // SIN TRANSFORMAR
+  if (params->distance == 0) {
     xlc = params->lc;
     xhc = params->hc;
   }
-  if (params->distance == 1) {  // Haldane
+  if (params->distance == 1) {
     if (params->lc >= 0.5) {
       xlc = 100.0;
     } else {
@@ -459,7 +345,7 @@ void CalculateD2Parallel(PopulationInfo* popInfo, SampleInfo* sampleInfo,
       xhc = -log(1.0 - 2.0 * params->hc) / 2.0;
     }
   }
-  if (params->distance == 2) {  // Kosambi
+  if (params->distance == 2) {
     if (params->lc >= 0.5) {
       xlc = 100.0;
     } else {
@@ -471,8 +357,8 @@ void CalculateD2Parallel(PopulationInfo* popInfo, SampleInfo* sampleInfo,
       xhc = -log((1.0 - 2.0 * params->hc) / (1.0 + 2.0 * params->hc)) / 4.0;
     }
   }
-  infx = xlc * 100.0;  // en cM
-  supx = xhc * 100.0;  // en cM
+  infx = xlc * 100.0;
+  supx = xhc * 100.0;
 
   int locus1;
   int locus2;
@@ -495,7 +381,6 @@ void CalculateD2Parallel(PopulationInfo* popInfo, SampleInfo* sampleInfo,
   long int nxc[MAXBINS] = {0};
   double xc[MAXBINS] = {0};
 
-  // Per thread accumulators
   double** txW  = new double*[numThreads];
   double** txD2 = new double*[numThreads];
   long int** tnxc = new long int*[numThreads];
@@ -504,7 +389,6 @@ void CalculateD2Parallel(PopulationInfo* popInfo, SampleInfo* sampleInfo,
   double *texpNData = new double[numThreads]{};
   double *teffNData = new double[numThreads]{};
 
-  // Allocate each thread's array
   for (int z = 0; z < numThreads; z++) {
     txW[z] = new double[MAXBINS]{};
     txD2[z] = new double[MAXBINS]{};
@@ -527,28 +411,111 @@ void CalculateD2Parallel(PopulationInfo* popInfo, SampleInfo* sampleInfo,
   omp_set_num_threads(numThreads);
   double frecI, frecJ;
   std::sort(valid_idx, valid_idx + sampleInfo->numSegLoci);
+
+  std::vector<int> validCromo(sampleInfo->numSegLoci);
+  std::vector<int> validChrEnd(sampleInfo->numSegLoci);
+  std::vector<double> validPosiCM(sampleInfo->numSegLoci);
+  std::vector<uint8_t> chrIsMonotonic(popInfo->numCromo + 1, 1);
+  std::vector<uint8_t> validChrIsMonotonic(sampleInfo->numSegLoci);
+  for (int locus = 1; locus < popInfo->numLoci; ++locus) {
+    const int cromo = popInfo->cromo[locus];
+    if (cromo == popInfo->cromo[locus - 1] &&
+        popInfo->posiCM[locus] < popInfo->posiCM[locus - 1]) {
+      chrIsMonotonic[cromo] = 0;
+    }
+  }
+  for (int idx = 0; idx < sampleInfo->numSegLoci; ++idx) {
+    const int locus = valid_idx[idx];
+    validCromo[idx] = popInfo->cromo[locus];
+    validPosiCM[idx] = popInfo->posiCM[locus];
+  }
+  for (int start = 0; start < sampleInfo->numSegLoci;) {
+    int end = start + 1;
+    while (end < sampleInfo->numSegLoci &&
+           validCromo[end] == validCromo[start]) {
+      ++end;
+    }
+    const uint8_t monotonic = chrIsMonotonic[validCromo[start]];
+    for (int idx = start; idx < end; ++idx) {
+      validChrEnd[idx] = end;
+      validChrIsMonotonic[idx] = monotonic;
+    }
+    start = end;
+  }
+
   sampleInfo->numSNPs = 0;
   int repes=1;
   if (sampleInfo->haplotype==3){
     repes=10;
   }
+  const bool useBitsetD2 = (repes == 1);
+  const int bitWords = (sampleInfo->sampleSizeIndi + 63) / 64;
+  std::vector<uint64_t> hetBits;
+  std::vector<uint64_t> homAltBits;
+  std::vector<uint64_t> calledBits;
+  if (useBitsetD2) {
+    const size_t bitsetSize =
+        static_cast<size_t>(sampleInfo->numSegLoci) * bitWords;
+    hetBits.assign(bitsetSize, 0);
+    homAltBits.assign(bitsetSize, 0);
+    calledBits.assign(bitsetSize, 0);
+    for (int idx = 0; idx < sampleInfo->numSegLoci; ++idx) {
+      const int locus = valid_idx[idx];
+      const size_t baseOffset = static_cast<size_t>(idx) * bitWords;
+      for (int sampleIdx = 0; sampleIdx < sampleInfo->sampleSizeIndi;
+           ++sampleIdx) {
+        const int indi = sampleInfo->shuffledIndi[sampleIdx];
+        const uint8_t genotype = popInfo->indi[indi][locus];
+        const size_t wordOffset = baseOffset + sampleIdx / 64;
+        const uint64_t bit = uint64_t{1} << (sampleIdx & 63);
+        if (genotype == 1) {
+          hetBits[wordOffset] |= bit;
+          calledBits[wordOffset] |= bit;
+        } else if (genotype == 2) {
+          homAltBits[wordOffset] |= bit;
+          calledBits[wordOffset] |= bit;
+        } else if (genotype < 9) {
+          calledBits[wordOffset] |= bit;
+        }
+      }
+    }
+  }
+  const double maxUsefulCenmor = sampleInfo->hayrecentbins ? 56.0 : supx;
+  long int completedLoci = 0;
   #pragma omp parallel for private(D, W, D2, W2, recrate, generacion, bin, extrabin,i, j, _i, genot1, genot2, locus1, locus2, tacuHoHo, tacuHoHetHetHo, tacuHetHet, pIndi, cenmor, contaIndX, frecI, frecJ, ss,_irepe) schedule(dynamic, 1000)
   for (i = 0; i < sampleInfo->numSegLoci - 1; ++i) {
     int tid = omp_get_thread_num();
+    if (sampleInfo->haplotype == 3) xprng.setSeed(params->semilla + i);
     locus1 = valid_idx[i];
     contaIndX = 0;
     double threadEffNCounter = 0;
     double threadExpNCounter = 0;
-    double posiCM1 = popInfo->posiCM[locus1];
-    int cromo1 = popInfo->cromo[locus1];
+    double posiCM1 = validPosiCM[i];
+    const int chrEnd = validChrEnd[i];
+    const bool cMIsMonotonic = validChrIsMonotonic[i] != 0;
     bool cond;
-    for (j = i + 1; j < sampleInfo->numSegLoci; ++j) {
-      locus2 = valid_idx[j];
-      // Are we in the same cromosome?
-      if (popInfo->cromo[locus2] != cromo1) {
-        continue;
+    int firstJ = i + 1;
+    if (cMIsMonotonic) {
+      const double minUsefulPosiCM = posiCM1 + infx;
+      firstJ = static_cast<int>(
+          std::lower_bound(validPosiCM.begin() + firstJ,
+                           validPosiCM.begin() + chrEnd,
+                           minUsefulPosiCM) -
+          validPosiCM.begin());
+      while (firstJ > i + 1 &&
+             validPosiCM[firstJ - 1] - posiCM1 >= infx) {
+        --firstJ;
       }
-      cenmor = fabs(popInfo->posiCM[locus2] - posiCM1);
+      while (firstJ < chrEnd && validPosiCM[firstJ] - posiCM1 < infx) {
+        ++firstJ;
+      }
+    }
+    for (j = firstJ; j < chrEnd; ++j) {
+      locus2 = valid_idx[j];
+      cenmor = fabs(validPosiCM[j] - posiCM1);
+      if (cMIsMonotonic && cenmor > maxUsefulCenmor) {
+        break;
+      }
       
       if (sampleInfo->hayrecentbins){
         if ((cenmor > 56)) {continue;}
@@ -566,47 +533,44 @@ void CalculateD2Parallel(PopulationInfo* popInfo, SampleInfo* sampleInfo,
         extrabin=-1;
       }
 
-      // acumuladores de genotipos
       D2=W2=0;
-      for (_irepe=0;_irepe<repes;++_irepe){
-        tacuHoHo = tacuHoHetHetHo = tacuHetHet = frecI = frecJ = 0;
-        pIndi = sampleInfo->shuffledIndi;
-        contaIndX = 0;
-        for (_i = 0; _i < sampleInfo->sampleSizeIndi; ++_i) {
-          genot1=popInfo->indi[*pIndi][locus1];
-          genot2=popInfo->indi[*pIndi][locus2];
-          if (sampleInfo->haplotype==3){  // Alternative for haplotype=3
-            if (genot1==1){
-              if (xprng.uniforme01() > 0.5){
-                genot1=0;
-              }
-              else{
-                genot1=2;
-              }
-            }
-            if (genot2==1){
-              if (xprng.uniforme01() > 0.5){
-                genot2=0;
-              }
-              else{
-                genot2=2;
-              }
-            }
-          }
-          ss = genot1 + genot2;
-          if (_irepe==0){threadExpNCounter++;}
-          cond = (ss < 9);
-          contaIndX += cond;
-          frecI += genot1 * cond;
-          frecJ += genot2 * cond;
-          tacuHetHet += (ss == 2) * (genot1 == 1);
-          tacuHoHetHetHo += (ss == 3);
-          tacuHoHo += (ss == 4); // Homo_no_ref and Homo_no_ref
-          ++pIndi;
+      if (useBitsetD2) {
+        long int contaIndXInt = 0;
+        long int frecIInt = 0;
+        long int frecJInt = 0;
+        long int tacuHoHoInt = 0;
+        long int tacuHoHetHetHoInt = 0;
+        long int tacuHetHetInt = 0;
+        const size_t offset1 = static_cast<size_t>(i) * bitWords;
+        const size_t offset2 = static_cast<size_t>(j) * bitWords;
+        for (int word = 0; word < bitWords; ++word) {
+          const uint64_t het1    = hetBits   [offset1 + word];
+          const uint64_t het2    = hetBits   [offset2 + word];
+          const uint64_t hom1    = homAltBits[offset1 + word];
+          const uint64_t hom2    = homAltBits[offset2 + word];
+          const uint64_t called1 = calledBits[offset1 + word];
+          const uint64_t called2 = calledBits[offset2 + word];
+          const uint64_t calledBoth = called1 & called2;
+
+          contaIndXInt += PopCount64(calledBoth);
+          frecIInt += PopCount64(het1 & called2) +
+                      2 * PopCount64(hom1 & called2);
+          frecJInt += PopCount64(het2 & called1) +
+                      2 * PopCount64(hom2 & called1);
+          tacuHetHetInt += PopCount64(het1 & het2);
+          tacuHoHetHetHoInt += PopCount64((hom1 & het2) | (het1 & hom2));
+          tacuHoHoInt += PopCount64(hom1 & hom2);
         }
+        threadExpNCounter += sampleInfo->sampleSizeIndi;
+        contaIndX = static_cast<double>(contaIndXInt);
         if (contaIndX == 0) {
           continue;
         }
+        frecI = static_cast<double>(frecIInt);
+        frecJ = static_cast<double>(frecJInt);
+        tacuHoHo = static_cast<double>(tacuHoHoInt);
+        tacuHoHetHetHo = static_cast<double>(tacuHoHetHetHoInt);
+        tacuHetHet = static_cast<double>(tacuHetHetInt);
         frecI /= 2 * contaIndX;
         frecJ /= 2 * contaIndX;
         W = frecI * frecJ;
@@ -619,11 +583,66 @@ void CalculateD2Parallel(PopulationInfo* popInfo, SampleInfo* sampleInfo,
         }
         D *= D;
         W *= (1.0 - frecI) * (1.0 - frecJ);
-        D2+=D;
-        W2+=W;
+        D2 = D;
+        W2 = W;
+      } else {
+        for (_irepe=0;_irepe<repes;++_irepe){
+          tacuHoHo = tacuHoHetHetHo = tacuHetHet = frecI = frecJ = 0;
+          pIndi = sampleInfo->shuffledIndi;
+          contaIndX = 0;
+          for (_i = 0; _i < sampleInfo->sampleSizeIndi; ++_i) {
+            genot1=popInfo->indi[*pIndi][locus1];
+            genot2=popInfo->indi[*pIndi][locus2];
+            if (sampleInfo->haplotype==3){
+              if (genot1==1){
+                if (xprng.uniforme01() > 0.5){
+                  genot1=0;
+                }
+                else{
+                  genot1=2;
+                }
+              }
+              if (genot2==1){
+                if (xprng.uniforme01() > 0.5){
+                  genot2=0;
+                }
+                else{
+                  genot2=2;
+                }
+              }
+            }
+            ss = genot1 + genot2;
+            if (_irepe==0){threadExpNCounter++;}
+            cond = (ss < 9);
+            contaIndX += cond;
+            frecI += genot1 * cond;
+            frecJ += genot2 * cond;
+            tacuHetHet += (ss == 2) * (genot1 == 1);
+            tacuHoHetHetHo += (ss == 3);
+            tacuHoHo += (ss == 4);
+            ++pIndi;
+          }
+          if (contaIndX == 0) {
+            continue;
+          }
+          frecI /= 2 * contaIndX;
+          frecJ /= 2 * contaIndX;
+          W = frecI * frecJ;
+          if (params->haplotype == 0){
+            D = -2.0 * W +
+              (2.0 * tacuHoHo + tacuHoHetHetHo + tacuHetHet / 2.0) / contaIndX;
+          }
+          else{
+            D= tacuHoHo / contaIndX - frecI * frecJ;
+          }
+          D *= D;
+          W *= (1.0 - frecI) * (1.0 - frecJ);
+          D2+=D;
+          W2+=W;
+        }
+        D2/=repes;
+        W2/=repes;
       }
-      D2/=repes;
-      W2/=repes;
       if (params->distance == 1) {
         recrate = (1.0 - exp(-0.02 * cenmor)) / 2.0;
       } else if (params->distance == 2) {
@@ -643,26 +662,32 @@ void CalculateD2Parallel(PopulationInfo* popInfo, SampleInfo* sampleInfo,
       else{
         bin=extrabin;
       }
-      // Maybe store binMax in a per-thread array and then loop in the end
-      // through all the local binMaxes
       if (bin > binMaxes[tid]) {
         binMaxes[tid] = bin;
       }
       threadEffNCounter += contaIndX;
-      //teffNData[tid] += contaIndX;
       tnxc[tid][bin] += 1;
-      txc[tid][bin] += 1/recrate; // Para calcular media harmonica
+      txc[tid][bin] += 1/recrate;
       txD2[tid][bin] += D2;
       txW[tid][bin] += W2;
     }
     teffNData[tid] += threadEffNCounter;
     texpNData[tid] += threadExpNCounter;
-    if (tid == 0 && i % 100 == 0) {
-      params->progress.SetTaskProgress(i+1);
-      //params->progress.PrintProgress();
+    long int progressValue = 0;
+#pragma omp atomic capture
+    progressValue = ++completedLoci;
+    if (progressValue == 1 || progressValue % 100 == 0 ||
+        progressValue == sampleInfo->numSegLoci - 1) {
+#pragma omp critical(gone_progress_update)
+      {
+        params->progress.SetStatusDetail(
+            "Processed " + std::to_string(progressValue) + " of " +
+            std::to_string(sampleInfo->numSegLoci - 1) +
+            " segregating loci");
+        params->progress.SetTaskProgress(static_cast<float>(progressValue));
+      }
     }
   }
-  // Reduction of data
   for (int nThread = 0; nThread < numThreads; ++nThread) {
     for (int nBin = 0; nBin <= binMaxes[nThread]; ++nBin) {
       nxc[nBin] += tnxc[nThread][nBin];
@@ -679,7 +704,7 @@ void CalculateD2Parallel(PopulationInfo* popInfo, SampleInfo* sampleInfo,
   }
 
   sampleInfo->binExtra= increbinBase;
-  refextra=nxc[increbinBase]; // Elimina los bines extras con pocos datos
+  refextra=nxc[increbinBase];
 
   for (i=increbinBase-1; i>=0; --i){
       if (nxc[i]<refextra*(3-i) * 0.6){
@@ -699,12 +724,12 @@ void CalculateD2Parallel(PopulationInfo* popInfo, SampleInfo* sampleInfo,
   double XXW=0;
   long int XXn=0;
   for (j = 0; j <= sampleInfo->binMax; ++j) {
-    if (nxc[j] > 0) {
+    if (nxc[j] > 0 && xW[j] > 0) {
       sampleInfo->nxc[j] = nxc[j];
       sampleInfo->xc[j] = xc[j];
       sampleInfo->xc[j] /= sampleInfo->nxc[j];
-      sampleInfo->xc[j] = 1 / sampleInfo->xc[j]; // media harmonica
-      sampleInfo->numSNPs += sampleInfo->nxc[j];  // numero de parejas de SNPs
+      sampleInfo->xc[j] = 1 / sampleInfo->xc[j];
+      sampleInfo->numSNPs += sampleInfo->nxc[j];
       sampleInfo->d2[j] = xD2[j] / xW[j];
         XXW+=xW[j];
         XXn+=nxc[j];
@@ -713,7 +738,6 @@ void CalculateD2Parallel(PopulationInfo* popInfo, SampleInfo* sampleInfo,
 
   popInfo->propMiss = 1.0 - static_cast<double>(popInfo->effNData) /
                                 static_cast<double>(popInfo->expNData);
-  // Numero efectivo de individuos
   sampleInfo->numIndiEff = sampleInfo->sampleSizeIndi * popInfo->effNData / popInfo->expNData;
 
   sampleInfo->increW=0;
@@ -724,7 +748,7 @@ void CalculateD2Parallel(PopulationInfo* popInfo, SampleInfo* sampleInfo,
     kappa = 1/(sampleInfo->numIndiEff +1);
     sampleInfo->increW=XXW-pow(((pow(XXW,.5)- epsilon)/(1-4 * epsilon)),2);
     for (j = 0; j <= sampleInfo->binMax; ++j) {
-      if (nxc[j] > 0) {
+      if (nxc[j] > 0 && xW[j] > 0) {
         sampleInfo->d2[j] = (xD2[j]/nxc[j]-sampleInfo->increW*kappa) / \
                             (xW[j]/nxc[j]-sampleInfo->increW*iota);
       }
@@ -742,7 +766,12 @@ void CalculateD2Parallel(PopulationInfo* popInfo, SampleInfo* sampleInfo,
       (popInfo->avgNumIndiAnalyzed - 1.0 + sampleInfo->f);
   }
 
-  // Free the rest of the memory
+  for (int z = 0; z < numThreads; ++z) {
+    delete[] tnxc[z];
+    delete[] txc[z];
+    delete[] txD2[z];
+    delete[] txW[z];
+  }
   delete[] tnxc;
   delete[] txc;
   delete[] txD2;
@@ -753,11 +782,20 @@ void CalculateD2Parallel(PopulationInfo* popInfo, SampleInfo* sampleInfo,
   delete[] valid_idx;
 }
 
+// -x (mix) mode: compute inter- and intra-chromosome d², then run the
+// Stage A/B structured search for (Fst, number of subpopulations s,
+// migration m) and the per-bin reconstructed within-population δ²pob.
+// Pushes the N_T curve to the live chart and leaves the structured GA
+// target in sampleInfo->d2[]. In probe mode (mixRoundProbe) it runs
+// silently for one -x resampling round.
+// Params: popInfoMix — metapop scratch state; popInfo — genotype source
+//   and where Fst/m/ps are stored; sampleInfo — receives per-bin
+//   d²/δ²pob and the structure transform; params — run configuration
+//   (probe flag, etc.).
 void CalculateD2ParallelFst(
-  std::string fichero, PopulationInfoMix* popInfoMix,
+  PopulationInfoMix* popInfoMix,
   PopulationInfo* popInfo, SampleInfo* sampleInfo,
   AppParams* params) {
-  // Calculo de D2:
 
   int* valid_idx = new int[popInfo->numLoci];
   int counter = 0;
@@ -769,20 +807,31 @@ void CalculateD2ParallelFst(
   bool okchromsize;
   double Dw2, Db2, DbDw;
   double Fst;
-  double mind2dif, minm, Nemejor, minmmejor;
+  double mind2dif = 0, minm = 0, Nemejor = 0, minmmejor = 0;
   double dw2,db2,dbdw;
   double d2spred1, d2spred2;
   int nsubs;
   bool flag_noconverge=false;
+  params->mixConverged = true;
 
-  params->progress.InitCurrentTask(sampleInfo->numSegLoci - 1);
+  params->progress.InitCurrentTask(
+      static_cast<float>(sampleInfo->numSegLoci - 1));
 
-  // Inicializamos la tabla de índices válidos (en los que segrega[x] es true)
+  const bool mafFilterOn = params->MAF > 0;
+  bool* popMafPass = nullptr;
+  if (mafFilterOn) {
+    popMafPass = new bool[popInfo->numLoci];
+    BuildPopMafMask(popInfo, params->MAF, popMafPass);
+  }
   for (int idx = 0; idx < popInfo->numLoci; idx++) {
-    if (sampleInfo->segrega[sampleInfo->shuffledLoci[idx]]) {
-      valid_idx[counter] = sampleInfo->shuffledLoci[idx];
-      counter++;
-    }
+    const int locus = sampleInfo->shuffledLoci[idx];
+    if (!sampleInfo->segrega[locus]) continue;
+    if (mafFilterOn && !popMafPass[locus]) continue;
+    valid_idx[counter] = locus;
+    counter++;
+  }
+  if (mafFilterOn) {
+    sampleInfo->numSegLoci = counter;
   }
 
   if (params->cMMb > 0) {
@@ -792,7 +841,6 @@ void CalculateD2ParallelFst(
     popInfo->Mtot = params->cMMb * popInfo->Mbtot / 100;
   }
 
-  // Checking chomosome sizes 
   j=0;
   okchromsize=true;
   desde=popInfo->posiCM[j];
@@ -836,7 +884,6 @@ void CalculateD2ParallelFst(
   double xW[2] = {0}, xD2[2] = {0};
   long int nxc[2] = {0};
 
-  // Per thread accumulators
   double** txW  = new double*[numThreads];
   double** txD2 = new double*[numThreads];
   long int** tnxc = new long int*[numThreads];
@@ -845,7 +892,6 @@ void CalculateD2ParallelFst(
   double *texpNData = new double[numThreads]{};
   double *teffNData = new double[numThreads]{};
 
-  // Allocate each thread's array
   for (int z = 0; z < numThreads; z++) {
     txW[z] = new double[2]{};
     txD2[z] = new double[2]{};
@@ -859,11 +905,22 @@ void CalculateD2ParallelFst(
   omp_set_num_threads(numThreads);
   double frecI, frecJ;
   std::sort(valid_idx, valid_idx + sampleInfo->numSegLoci);
-  // sampleInfo->numSNPs = 0;
   int repes=1;
+  long int completedLoci = 0;
+  for (int z = 0; z < numThreads; ++z) {
+    txW [z][0] = txW [z][1] = 0;
+    txD2[z][0] = txD2[z][1] = 0;
+    tnxc[z][0] = tnxc[z][1] = 0;
+    txc [z][0] = txc [z][1] = 0;
+    teffNData[z] = 0;
+    texpNData[z] = 0;
+  }
+  std::fill_n(mapdist, MAXDIST, 0.0);
+  completedLoci = 0;
   #pragma omp parallel for private(D, W, D2, W2, bin, i, j, _i, genot1, genot2, locus1, locus2, tacuHoHo, tacuHoHetHetHo, tacuHetHet, pIndi, cenmor, contaIndX, frecI, frecJ, ss,_irepe) schedule(dynamic, 1000)
   for (i = 0; i < sampleInfo->numSegLoci - 1; ++i) {
     int tid = omp_get_thread_num();
+    if (sampleInfo->haplotype == 3) xprng.setSeed(params->semilla + i);
     locus1 = valid_idx[i];
     contaIndX = 0;
     double threadEffNCounter = 0;
@@ -873,22 +930,22 @@ void CalculateD2ParallelFst(
     bool cond;
     for (j = i + 1; j < sampleInfo->numSegLoci; ++j) {
       locus2 = valid_idx[j];
-      // Are we in the same cromosome?
       bin=-1;
       if (popInfo->cromo[locus2] != cromo1) {
         bin=0;
       }
       else{
         cenmor = fabs(popInfo->posiCM[locus2] - posiCM1);
-        if (cenmor>5){ // No se consideran las parejas más próximas de 5 cM <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        if (cenmor>5){
           cenmor/=increcM;
+          int distIdx = static_cast<int>(cenmor);
+          if (distIdx >= MAXDIST) distIdx = MAXDIST - 1;
           #pragma omp atomic
-          ++mapdist[int(cenmor)];
+          ++mapdist[distIdx];
           bin=1;
         }
       }
       if (bin>=0){
-        // acumuladores de genotipos
         D2=W2=0;
         for (_irepe=0;_irepe<repes;++_irepe){
           tacuHoHo = tacuHoHetHetHo = tacuHetHet = frecI = frecJ = 0;
@@ -897,7 +954,7 @@ void CalculateD2ParallelFst(
           for (_i = 0; _i < sampleInfo->sampleSizeIndi; ++_i) {
             genot1=popInfo->indi[*pIndi][locus1];
             genot2=popInfo->indi[*pIndi][locus2];
-            if (sampleInfo->haplotype==3){  // Alternative for haplotype=3
+            if (sampleInfo->haplotype==3){
               if (genot1==1){
                 if (xprng.uniforme01() > 0.5){
                   genot1=0;
@@ -917,14 +974,13 @@ void CalculateD2ParallelFst(
             }
             ss = genot1 + genot2;
             if (_irepe==0){threadExpNCounter++;}
-            //++texpNData[tid];
             cond = (ss < 9);
             contaIndX += cond;
             frecI += genot1 * cond;
             frecJ += genot2 * cond;
             tacuHetHet += (ss == 2) * (genot1 == 1);
             tacuHoHetHetHo += (ss == 3);
-            tacuHoHo += (ss == 4); // Homo_no_ref and Homo_no_ref
+            tacuHoHo += (ss == 4);
             ++pIndi;
           }
           if (contaIndX == 0) {
@@ -956,17 +1012,50 @@ void CalculateD2ParallelFst(
     }
     teffNData[tid] += threadEffNCounter;
     texpNData[tid] += threadExpNCounter;
-    if (tid == 0 && i % 100 == 0) {
-      params->progress.SetTaskProgress(i+1);
-      //params->progress.PrintProgress();
+    long int progressValue = 0;
+#pragma omp atomic capture
+    progressValue = ++completedLoci;
+    if (progressValue == 1 || progressValue % 100 == 0 ||
+        progressValue == sampleInfo->numSegLoci - 1) {
+#pragma omp critical(gone_progress_update)
+      {
+        const std::string detail =
+            "Processed " + std::to_string(progressValue) + " of " +
+            std::to_string(sampleInfo->numSegLoci - 1) +
+            " segregating loci";
+        params->progress.SetStatusDetail(detail);
+        params->progress.SetTaskProgress(static_cast<float>(progressValue));
+        if (progressValue % 200 == 0 ||
+            progressValue == sampleInfo->numSegLoci - 1) {
+          double xD2_part = 0, xW_part = 0;
+          long int n_part = 0;
+          for (int t = 0; t < numThreads; ++t) {
+            xD2_part += txD2[t][0];
+            xW_part  += txW[t][0];
+            n_part   += tnxc[t][0];
+          }
+          if (n_part > 100 && xW_part > 0) {
+            const double d2s05_partial = xD2_part / xW_part;
+            double Fst_partial =
+                (d2s05_partial > 0) ? std::sqrt(d2s05_partial) : 0.0;
+            if (Fst_partial > 0.9) Fst_partial = 0.9;
+            const long int totalLoci = sampleInfo->numSegLoci - 1;
+            const int pct = (totalLoci > 0)
+                ? static_cast<int>(100.0 * progressValue / totalLoci)
+                : 100;
+            params->progress.SetBestScoreLabeled(
+                Fst_partial, "Best Fst",
+                "convergence " + std::to_string(pct) + "%");
+          }
+        }
+      }
     }
   }
-  // Reduction of data
   for (int nThread = 0; nThread < numThreads; ++nThread) {
     for (int nBin = 0; nBin <= 1; ++nBin) {
       nxc[nBin] += tnxc[nThread][nBin];
       xD2[nBin] += txD2[nThread][nBin];
-      xW[nBin]  += txW[nThread][nBin];
+      xW [nBin] += txW [nThread][nBin];
     }
     effNData += teffNData[nThread];
     expNData += texpNData[nThread];
@@ -982,8 +1071,6 @@ void CalculateD2ParallelFst(
     }
   }
 
-  // Calculo de la distribución de distancias para la integral:
-
   double contadist=0;
   double maxdistance=0;
   int maxdistanceindx=0;
@@ -991,13 +1078,15 @@ void CalculateD2ParallelFst(
     if (mapdist[j]>0){
       contadist+=mapdist[j];
       if(mapdist[j]>maxdistance){
-        maxdistance=float(j)/10000; // en Morgans
+        maxdistance=float(j)/10000;
         maxdistanceindx=j;
       }
     }
   }
-  for (j = 0; j <=maxdistanceindx; ++j){
-      mapdist[j]/=contadist;
+  if (contadist > 0) {
+    for (j = 0; j <=maxdistanceindx; ++j){
+        mapdist[j]/=contadist;
+    }
   }
 
   if (popInfo->haplotype==0){
@@ -1012,7 +1101,6 @@ void CalculateD2ParallelFst(
       (numIndi - 1.0 + sampleInfo->f);
       xWt /= (1-2/(numIndi+1));
   }
-
 
   double d2s05 = xD2[0]/xW[0];
   double d2slink = xD2[1]/xW[1];
@@ -1043,7 +1131,6 @@ void CalculateD2ParallelFst(
   }
 
   if ((d2>0) && (d2slink>d2s05)){
-    // first, find the maximum possible value of Fst
     int ps=2;
     double m;
     double Ne, NeT;
@@ -1057,7 +1144,7 @@ void CalculateD2ParallelFst(
     double Ne2, Ne3;
     double ps2, ps3;
     double minNedif;
-    double d2b05= (d2s05 - sampley * fp12) / samplex / 4; // el 4 es por ser unphased
+    double d2b05= (d2s05 - sampley * fp12) / samplex / 4;
     double kk1=float(ps)/(float(ps)-1);
     double kk2=kk1*kk1;
     double kk4=kk2*kk2;
@@ -1097,21 +1184,18 @@ void CalculateD2ParallelFst(
             break;
           }
         }
-        if (Fstmejor<1){ // Si Fst valido
+        if (Fstmejor<1){
           Fst=Fstmejor;
           Ne=(Nemejor);
           NeT=Ne*ps;
-          // FORMULA ABREVIADA:
           m= (1-Fst)/(4*Ne*Fst*pow((float(ps)/float(ps-1)),2));
-          // FORMULA COMPLETA:
-          // m = (1-pow(1-1/(2*ps/(ps-1)*Ne)*(1-Fst)/Fst,0.5))/(ps/(ps-1));
           m2=m;
           Fst2=Fst;
           Ne2=Ne;
           ps2=ps;
 
           double paramssanterior=ps;
-          if (repe<2){ // Nueva busqueda si es la primera o segunda pasada
+          if (repe<2){
             CIEN=100;
             d2p05=(d2s05-sampley*fp12)/samplex;
             double Fis,lowestFis=999999999;
@@ -1137,8 +1221,6 @@ void CalculateD2ParallelFst(
                           minmmejor=m;
                           mind2difant=mind2dif;
                           Fstmejor=Fst;
-                          // mejord2spred2=d2spred2;
-                          // mejord2spred1=d2spred1;
                         }
                       }
                     }
@@ -1167,7 +1249,7 @@ void CalculateD2ParallelFst(
               }
             }
 
-            if(paramssanterior==ps){ // Stop si la salida de la nueva busqueda no cambia.
+            if(paramssanterior==ps){
               break;
             }
           }
@@ -1175,22 +1257,33 @@ void CalculateD2ParallelFst(
         else{
           flag_noconverge=true;
         }
-        if (repe==0){ // Si no converge a la primera, sale
+        if (repe==0){
           if (flag_noconverge){
+          if (params->mixRoundProbe){
+            params->mixConverged = false;
+            for (int z = 0; z < numThreads; ++z) {
+              delete[] tnxc[z]; delete[] txc[z];
+              delete[] txD2[z]; delete[] txW[z];
+            }
+            delete[] tnxc; delete[] txc; delete[] txD2; delete[] txW;
+            delete[] teffNData; delete[] texpNData;
+            delete[] valid_idx; delete[] popMafPass;
+            return;
+          }
           std::cerr  << "  There is no convergence to a solution within the range of Fst values from 0 to 1.\n";
           std::cerr << "\n";
           exit(EXIT_FAILURE);
           }
         }
         if (repe<2){
-          if (!flag_noconverge){ // guarda salida en el buffer salida3 si converge
+          if (!flag_noconverge){
             m3=m2;
             Fst3=Fst2;
             Ne3=Ne2;
             ps3=ps2;
           }
         }
-        if ((ps==2) || (flag_noconverge)){ // recupera buffer anterior y sale
+        if ((ps==2) || (flag_noconverge)){
           m2=m3;
           Fst2=Fst3;
           Ne2=Ne3;
@@ -1206,6 +1299,10 @@ void CalculateD2ParallelFst(
 
       popInfo->m=m;
       popInfo->Fst=Fst;
+      popInfo->ps=ps;
+
+      params->progress.SetBestScoreLabeled(
+          Fst, "Best Fst", "ps=" + std::to_string(ps));
 
       double d2spred=0;
       Ne = FixMixEcuacion05link(&ps,&kk2,&kk4,numIndi, popInfo->f, popInfo->haplotype, popInfo->basecallcorrec, Fst,&popInfo->m,&xWt,&Dw2,&Db2,&DbDw,0.5,&d2spred,d2s05, KK);
@@ -1221,24 +1318,23 @@ void CalculateD2ParallelFst(
       popInfoMix->d2spred[0]=d2spred;
       popInfoMix->d2sobs[0]=d2s05;
 
-      std::string fichero_sal_NeH = fichero + "_GONE2_Ne_mix";
-      std::ofstream salida;
-      salida.open(fichero_sal_NeH, std::ios::out);
-      salida << "# Estimate of historical Ne using observed LD  of different recombination bis. This is an\n"
-        "# extension to a subdivided population model of the Hayes et al. (2003) approach and\n"
-        "# should be considered an approximate trend.\n"
-        "#\n"
-        "# Number of subpopulations:\n"
-        << ps << "\n"
-        "# Fst:\n"
-        << std::fixed << std::setprecision(8) << Fst << "\n"
-        "# Migration rate:\n"
-        << m << "\n"
-        "#\n";
+      constexpr int kChartMaxGen = 150;
+      std::vector<double> chartNT(kChartMaxGen, 0.0);
 
-      salida <<"# Rec_rate_bin\tgeneration\tN_T_metapop\tNe_metapop\td²_metapop\n";
+      std::vector<double> d2pobBuf;
+      std::vector<double> rawObsBuf;
+      std::vector<long int> d2pobNxc;
+      if (params->twoPassGA) {
+        d2pobBuf.assign(sampleInfo->binMax, 0.0);
+        rawObsBuf.assign(sampleInfo->binMax, 0.0);
+        d2pobNxc.assign(sampleInfo->binMax, 0);
+      }
+      struct MixPoint {
+        int    gen;
+        double NT;
+      };
+      std::vector<MixPoint> mixSamplePoints;
 
-      int contador=0;
       double d2sample=d2s05;
       double c=0.5;
       for (int nBin=-1;nBin<sampleInfo->binMax;++nBin){
@@ -1258,60 +1354,173 @@ void CalculateD2ParallelFst(
         double zDw2 = (1-2*Fst*(1-Fst)-zDb2)*(1+c2)/(2*ps*Ne*(1-c12)+2.2*c12);
         double zDbDw = ((kk2)*(zDb2)*m12*(1-(m))*((m))+(zDw2)/(2*ps*Ne))/(1-m12*(1-c)*(1-1.0/ps/Ne));
 
-        //double zDw2p = (zDw2)*c12 + (kk4)*(zDb2)*(1-(m))*(1-(m))*(m)*(m) + 2*(kk2)*(zDbDw)*(1-(m))*(m)*(1-c);
         double zDbDwp = (zDbDw)*m12*(1-c) + (kk2)*(zDb2)*m12*(1-(m))* (m);
         double zDb2p = (zDb2)*m12*m12;   
 
         double zDw2preconstruida = (d2sample - sampley*fp12)/samplex-4*(zDb2p+zDbDwp);
         double zDw2reconstruida = (zDw2preconstruida - (kk4)*(zDb2)*(1-(m))*(1-(m))*(m)*(m) - 2*(kk2)*(zDbDw)*(1-(m))*(m)*(1-c)) /c12;
-        double d2pob=zDw2reconstruida / (1-2*Fst*(1-Fst)-(zDb2)); // ahora es la poblacional
+        double d2pob=zDw2reconstruida / (1-2*Fst*(1-Fst)-(zDb2));
         Ne=(1+c2-2.2*d2pob*c12)/(2*d2pob*(1-c12));
+        if (nBin >= 0) sampleInfo->mixBinD2pob[nBin] = d2pob;
+        else         { sampleInfo->mixAnchorD2pob   = d2pob;
+                       sampleInfo->mixAnchorD2obs   = d2sample; }
         if (Ne > 0) {
-          salida <<std::fixed<< std::setprecision(5)<< c<<"\t"<<std::fixed<< std::setprecision(0)<< generacion<<"\t"<<std::fixed<< std::setprecision(2)<< Ne<< "\t"<< Ne/(1-Fst)<< "\t";
-          salida <<std::fixed<< std::setprecision(8)<< d2pob<<"\n";
-        }
-
-      
-        #ifdef EXPERIMENTAL_MIX
-        // vvvvvvvvvvvvvvvvvvvvvANADIDO PARA CALCULO ALGORITMO GENETICO
-        if (nBin>=0){
-            sampleInfo->d2[nBin]=d2pob;
+          const int genIdx =
+              static_cast<int>(std::round(generacion)) - 1;
+          if (genIdx >= 0 && genIdx < kChartMaxGen) {
+            chartNT[genIdx] = Ne;
           }
-        // ^^^^^^^^^^^^^^^^^^^^^^FIN DE ANADIDO PARA CALCULO ALGRITMO GENETICO
-        #endif
+          MixPoint mp;
+          mp.gen       = static_cast<int>(std::round(generacion));
+          mp.NT        = Ne;
+          mixSamplePoints.push_back(mp);
+        }
 
-        ++contador;
-      }
-      salida.close();
-
-      #ifdef EXPERIMENTAL_MIX
-      // vvvvvvvvvvvvvvvvvvvvvANADIDO PARA CALCULO ALGORITMO GENETICO
-      contador=0;
-      for (int nBin=0;nBin<sampleInfo->binMax;++nBin){
-        if (sampleInfo->nxc[nBin] < 0.05){
-          contador=nBin;
-          break;
+        if (params->twoPassGA && nBin >= 0) {
+          const double K1 = 1 - 2 * Fst * (1 - Fst) - zDb2;
+          const double crossconst =
+              kk4 * zDb2 * (1 - m) * (1 - m) * m * m +
+              2 * kk2 * zDbDw * (1 - m) * m * (1 - c);
+          sampleInfo->structScale[nBin] = K1 * c12 * samplex;
+          sampleInfo->structOffset[nBin] =
+              (crossconst + 4 * (zDb2p + zDbDwp)) * samplex + sampley * fp12;
+          d2pobBuf[nBin]  = d2pob;
+          rawObsBuf[nBin] = d2sample;
+          d2pobNxc[nBin]  = sampleInfo->nxc[nBin];
         }
       }
-      for (int nBin=contador;nBin<sampleInfo->binMax;++nBin){
-        sampleInfo->nxc[nBin-contador]=sampleInfo->nxc[nBin];
-        sampleInfo->d2[nBin-contador]=sampleInfo->d2[nBin];
-        sampleInfo->xc[nBin-contador]=sampleInfo->xc[nBin];        
+
+      if (params->twoPassGA && !params->mixRoundProbe) {
+        int populated = 0;
+        int broken    = 0;
+        for (int nBin = 0; nBin < sampleInfo->binMax; ++nBin) {
+          if (d2pobNxc[nBin] <= 0) continue;
+          ++populated;
+          if (d2pobBuf[nBin] <= 0) ++broken;
+        }
+        const double brokenFrac =
+            populated > 0
+                ? static_cast<double>(broken) / static_cast<double>(populated)
+                : 1.0;
+        if (populated == 0 || brokenFrac > 0.60) {
+          {
+            params->twoPassGA = false;
+            if (mixSamplePoints.size() >= 2) {
+              std::sort(mixSamplePoints.begin(), mixSamplePoints.end(),
+                        [](const MixPoint& a, const MixPoint& b) {
+                          return a.gen < b.gen;
+                        });
+              auto interpLog = [](double x, double x0, double x1,
+                                  double y0, double y1) {
+                if (x1 == x0 || y0 <= 0 || y1 <= 0) return y0;
+                const double t = (x - x0) / (x1 - x0);
+                return std::pow(10.0, std::log10(y0) +
+                                          t * (std::log10(y1) -
+                                               std::log10(y0)));
+              };
+              const std::string fNe =
+                  params->fileOut + Gone2OutPrefix(params->mixRun) + "Ne";
+              std::ofstream out(fNe);
+              out << "Generation\tN_T\n";
+              const int genFirst = mixSamplePoints.front().gen;
+              const int genLast  = mixSamplePoints.back().gen;
+              for (int g = 1; g <= 150; ++g) {
+                double NT = 0;
+                if (g <= genFirst) {
+                  NT  = mixSamplePoints.front().NT;
+                } else if (g >= genLast) {
+                  NT  = mixSamplePoints.back().NT;
+                } else {
+                  for (size_t k = 0; k + 1 < mixSamplePoints.size(); ++k) {
+                    const MixPoint& lo = mixSamplePoints[k];
+                    const MixPoint& hi = mixSamplePoints[k + 1];
+                    if (g >= lo.gen && g <= hi.gen) {
+                      NT  = interpLog(g, lo.gen, hi.gen, lo.NT,
+                                       hi.NT);
+                      break;
+                    }
+                  }
+                }
+                if (g - 1 < kChartMaxGen) {
+                  chartNT[g - 1] = NT;
+                }
+                out << g << "\t" << NT << "\n";
+              }
+              out.close();
+            }
+          }
+        } else {
+          for (int nBin = 0; nBin < sampleInfo->binMax; ++nBin) {
+            if (d2pobNxc[nBin] <= 0) continue;
+            if (d2pobBuf[nBin] > 0) {
+              sampleInfo->d2[nBin] = rawObsBuf[nBin];
+            } else {
+              sampleInfo->nxc[nBin] = 0;
+            }
+          }
+          sampleInfo->structuredMix = true;
+        }
       }
-      sampleInfo->binMax-=contador;
-      // ^^^^^^^^^^^^^^^^^^^^^^FIN DE ANADIDO PARA CALCULO ALGORITMO GENETICO
-      #endif
+
+      double lastNT = 0.0;
+      for (int g = 0; g < kChartMaxGen; ++g) {
+        if (chartNT[g] > 0) lastNT = chartNT[g];
+        else if (lastNT > 0) chartNT[g] = lastNT;
+      }
+      if (lastNT > 0) {
+        double firstNT = 0.0;
+        for (int g = 0; g < kChartMaxGen; ++g) {
+          if (chartNT[g] > 0) { firstNT = chartNT[g]; break; }
+        }
+        for (int g = 0; g < kChartMaxGen && chartNT[g] == 0; ++g) {
+          chartNT[g] = firstNT;
+        }
+      }
+      if (lastNT == 0) {
+        if (!params->mixRoundProbe) {
+          const std::string warn =
+              "WARNING: -x analysis produced no positive Ne estimate;"
+              " nothing is shown or written.";
+          std::cerr << " " << warn << "\n";
+          params->progress.SetWarning(warn);
+          params->progress.SetStatusDetail("Mix analysis produced no Ne");
+          params->twoPassGA = false;
+        }
+      } else {
+        params->progress.SetNeSnapshot(chartNT, "N_T");
+        params->chartNTMix.assign(chartNT.begin(), chartNT.end());
+      }
     }
   }
   else{
-    if (d2 < 0) {
-      std::cerr << "# Ne cannot be estimated. d2 estimate for the population is negative.\n" << std::endl;
-                 
-    } else {
-      std::cerr << "# Ne cannot be estimated because the LD is smaller for linked than for unlinked markers.\n"<<std::endl;
+    params->mixConverged = false;
+    if (!params->mixRoundProbe) {
+      params->twoPassGA = false;
+      std::string warn;
+      if (d2 < 0) {
+        warn = "WARNING: -x analysis could not converge. The observed d²"
+               " between unlinked sites is at or below the sampling-noise"
+               " floor (typically: sample size too small, or Fst too low"
+               " to be distinguished from sampling variance). No Ne"
+               " estimate is produced.";
+        std::cerr << "# Ne cannot be estimated. d2 estimate for the population is negative.\n" << std::endl;
+      } else {
+        warn = "WARNING: -x analysis could not converge. The observed d²"
+               " between linked sites is not larger than between unlinked"
+               " sites, which the two-bin Fst search requires. No Ne"
+               " estimate is produced.";
+        std::cerr << "# Ne cannot be estimated because the LD is smaller for linked than for unlinked markers.\n"<<std::endl;
+      }
+      params->progress.SetWarning(warn);
+      params->progress.SetStatusDetail("Mix analysis did not converge");
     }
   }
-  // Free the rest of the memory
+  for (int z = 0; z < numThreads; ++z) {
+    delete[] tnxc[z];
+    delete[] txc[z];
+    delete[] txD2[z];
+    delete[] txW[z];
+  }
   delete[] tnxc;
   delete[] txc;
   delete[] txD2;
@@ -1319,14 +1528,24 @@ void CalculateD2ParallelFst(
   delete[] teffNData;
   delete[] texpNData;
   delete[] valid_idx;
+  delete[] popMafPass;
 }
 
-
+// Island-model fit for one Fst value: search Ne so the predicted within-
+// population d² matches the observed inter-chromosome (c=0.5) and linked-
+// bin d², returning the best-fitting LD components, migration rate and Ne.
+// Params: ps — number of subpopulations; kk2/kk4 — sampling-correction
+//   constants; d2slink/d2s05 — observed linked / unlinked d²; effeneind —
+//   effective sample size; fp — inbreeding proxy; Fst — fixation index;
+//   increFst — Fst step; maxdistance — max map distance. Output pointers:
+//   mind2dif (best residual), minNedif/minm (best Ne / migration), dw2/db2/
+//   dbdw and Dw2/Db2/DbDw (LD components), d2spred1/d2spred2 (predicted
+//   linked / unlinked d²), mapdist, m, Ne.
 void Mix05ylink(int* ps,double* kk2,double* kk4,double* d2slink, double* d2s05,double* mind2dif,
   double* minNedif, double* minm, double* dw2, double* db2, double* dbdw,
   double* d2spred2,double* d2spred1,double maxdistance,
-  double effeneind, double fp, 
-  double Fst, double* m, 
+  double effeneind, double fp,
+  double Fst, double* m,
   double* Dw2,double* Db2, double* DbDw,double* mapdist, double* Ne,double increFst){
 
   int ii, j,minj;
@@ -1351,14 +1570,14 @@ void Mix05ylink(int* ps,double* kk2,double* kk4,double* d2slink, double* d2s05,d
 
   int CIEN=50;
 
-  increL=0.0001; // El cromosoma de 10 Morgans (max) se parte en incres de 1/100.000 Morgans
+  increL=0.0001;
   distmin=0.05+increL/2;
   minj=int(distmin/increL);
 
   minlog=0;
-  maxlog=6; //maximum Ne = 10^6 per subpop
+  maxlog=6;
   increlog=maxlog/CIEN;
-  *mind2dif=99999999; // no valido
+  *mind2dif=99999999;
   *minNedif=99999999;
   *minm=99999999;
   for (ii=0;ii<3;++ii){
@@ -1366,16 +1585,11 @@ void Mix05ylink(int* ps,double* kk2,double* kk4,double* d2slink, double* d2s05,d
       while(logNe<maxlog){
           logNe+=increlog;
           *Ne=pow(10,logNe);
-          // FORMULA ABREVIADA:
           *m= (1-Fst)/(4*(*Ne)*Fst*pow((float(*ps)/float(*ps-1)),2));
-          // FORMULA COMPLETA:
-          // m = (1-pow(1-1/(2*ps/(ps-1)*Ne)*(1-Fst)/Fst,0.5))/(ps/(ps-1));
           ms=float(*ps)*(*m)/float(*ps-1);
           m12=(1-ms)*(1-ms);
           if ((*m>0) && (*m<0.5)){
-              // AHORA VAN LOS DEl MISMO CROMOSOMA
               sumad2spred = 0;
-              // sumad2ppred = 0;
               distancia = distmin;
               sumafrec = 0;
               j = minj;
@@ -1385,11 +1599,8 @@ void Mix05ylink(int* ps,double* kk2,double* kk4,double* d2slink, double* d2s05,d
                   c2 = c * c;
                   c12 = (1 - c) * (1 - c);
 
-                  // FORMULACION ABREVIADA:
                   *Db2=Fst*Fst/((*ps)-1);
-                  // *Dw2=(1-Fst)*(1-Fst)*(1+c2)/(2*(*ps)*(*Ne)*(1-c12)+2.2*c12);//****************
                   *Dw2=(1-2*Fst*(1-Fst)-(*Db2))*(1+c2)/(2*(*ps)*(*Ne)*(1-c12)+2.2*c12);
-                  // *DbDw=((*kk2)*(*Db2)*(*m))/(1-m12*(1-c));// **************************
                   *DbDw=((*kk2)*(*Db2)*m12*(1-(*m))*(*m)+(*Dw2)/(2*(*ps)*(*Ne)))/(1-m12*(1-c)*(1-1/(*ps)/(*Ne)));
 
                   Dw2p = (*Dw2)*c12 + (*kk4)*(*Db2)*(1-(*m))*(1-(*m))*(*m)*(*m) + 2*(*kk2)*(*DbDw)*(1-(*m))*(*m)*(1-c);
@@ -1398,7 +1609,7 @@ void Mix05ylink(int* ps,double* kk2,double* kk4,double* d2slink, double* d2s05,d
                   d2ppred1=Dw2p+4*Db2p+4*DbDwp;           
                   *d2spred1=(d2ppred1)*samplex+sampley * fp12;
 
-                  sumad2spred += (*(mapdist+j)) * (*d2spred1); // La integral
+                  sumad2spred += (*(mapdist+j)) * (*d2spred1);
                   distancia += increL;
                   sumafrec += (*(mapdist+j));
                   ++j;
@@ -1406,24 +1617,18 @@ void Mix05ylink(int* ps,double* kk2,double* kk4,double* d2slink, double* d2s05,d
               if (sumafrec > 0)
               {
                   *d2spred1 = (sumad2spred / sumafrec);
-                  // d2ppred1 = (sumad2ppred / sumafrec);
               }
               else
               {
                   std::cerr << "Within chromosome integral cannot be computed." << std::endl;
                   exit(EXIT_FAILURE);
               }
-              //
-              // AHORA VAN LOS DE DISTINTO CROMOSOMA
               c = 0.5;
               c2 = c * c;
               c12 = (1 - c) * (1 - c);
 
-              // FORMULACION ABREVIADA:
               *Db2=Fst*Fst/((*ps)-1);
-              // *Dw2=(1-Fst)*(1-Fst)*(1+c2)/(2*(*ps)*(*Ne)*(1-c12)+2.2*c12);// *********************
               *Dw2=(1-2*Fst*(1-Fst)-(*Db2))*(1+c2)/(2*(*ps)*(*Ne)*(1-c12)+2.2*c12);
-              // *DbDw=((*kk2)*(*Db2)*(*m))/(1-m12*(1-c));// **************************
               *DbDw=((*kk2)*(*Db2)*m12*(1-(*m))*((*m))+(*Dw2)/(2*(*ps)*(*Ne)))/(1-m12*(1-c)*(1-1/(*ps)/(*Ne)));
 
               Dw2p = (*Dw2)*c12 + (*kk4)*(*Db2)*(1-(*m))*(1-(*m))*(*m)*(*m) + 2*(*kk2)*(*DbDw)*(1-(*m))*(*m)*(1-c);
@@ -1453,6 +1658,13 @@ void Mix05ylink(int* ps,double* kk2,double* kk4,double* d2slink, double* d2s05,d
   }
 }
 
+// For a fixed (Fst, Ne, number of subpopulations), derive the implied
+// migration rate m and the island-model LD components, plus the predicted
+// unlinked-pair (c=0.5) d² and its distance from the observed value.
+// Params: Fst, Ne — fixed structural values; nsubs/ps — number of
+//   subpopulations; kk2/kk4 — sampling constants; d2p05 — observed unlinked
+//   d². Output pointers: m (migration), Dw2/Db2/DbDw (LD components),
+//   d2spred2 (predicted unlinked d²), mind2dif (|predicted − observed|).
 void CalculaOtros(double* mind2dif,double* m, double Fst,double Ne, int* nsubs,
   double* Dw2,double* Db2, double* DbDw, double* d2spred2, int* ps,double* kk2,double* kk4, double* d2p05){
 
@@ -1469,26 +1681,32 @@ void CalculaOtros(double* mind2dif,double* m, double Fst,double Ne, int* nsubs,
   ms=float(*nsubs)*(*m)/float(*nsubs-1);
   m12=(1-ms)*(1-ms);
 
-
   if (((*m)>0) && (*m<0.5)){
 
-      // FORMULACION ABREVIADA:
       *Db2=Fst*Fst/(*nsubs-1);
-      // *Dw2=(1-Fst)*(1-Fst)*(1+c2)/(2*(*nsubs)*Ne*(1-c12)+2.2*c12);// ***************************
       *Dw2=(1-2*Fst*(1-Fst)-(*Db2))*(1+c2)/(2*(*nsubs)*Ne*(1-c12)+2.2*c12);
-      // *DbDw=((*kk2)*(*Db2)*(*m))/(1-m12*(1-c));// **************************
       *DbDw=((*kk2)*(*Db2)*m12*(1-(*m))*(*m)+(*Dw2)/(2*(*nsubs)*Ne))/(1-m12*(1-c)*(1-1/(*nsubs)/Ne));
 
       Dw2p = (*Dw2)*c12 + (*kk4)*(*Db2)*(1-(*m))*(1-(*m))*(*m)*(*m) + 2*(*kk2)*(*DbDw)*(1-(*m))*(*m)*(1-c);
       DbDwp = (*DbDw)*m12*(1-c) + (*kk2)*(*Db2)*m12*(1-(*m))* (*m);
       Db2p = (*Db2)*m12*m12;                
-      *d2spred2=(Dw2p+4*Db2p+4*DbDwp); // en realidad es poblacional
+      *d2spred2=(Dw2p+4*Db2p+4*DbDwp);
 
-      *mind2dif=std::abs(*d2spred2-*d2p05); // diferencia entre esperado y real.
+      *mind2dif=std::abs(*d2spred2-*d2p05);
   }
 }
 
 //  MIGRACION entre subpoblaciones:
+// Refine Ne for the structured (island) model at a given Fst/migration by
+// iteratively shrinking the search window so the predicted within-
+// population d² at recombination rate c matches the observed d².
+// Params: ps — number of subpopulations; kk2/kk4 — sampling constants;
+//   effeneind — effective sample size; fp — inbreeding proxy; haplotype —
+//   genotyping mode; basecallcorrec — base-call correction; Fst — fixation
+//   index; m — migration (in/out); c — recombination rate; d2sobs —
+//   observed d²; KK — scaling constant. Output pointers: Wt, Dw2/Db2/DbDw
+//   (LD components), d2spred (predicted d²).
+// Returns: the fitted Ne.
 double FixMixEcuacion05link(int* ps,double* kk2,double* kk4,double effeneind, double fp, int haplotype, double basecallcorrec, double Fst, double* m, double* Wt,double* Dw2,double* Db2, double* DbDw, double c,double* d2spred,double d2sobs, double KK)
 {
     int DOSMIL, i, ii, conta;
@@ -1524,9 +1742,7 @@ double FixMixEcuacion05link(int* ps,double* kk2,double* kk4,double effeneind, do
             {
 
                 *Db2=Fst*Fst/((*ps)-1);
-                // *Dw2=(1-Fst)*(1-Fst)*(1+c2)/(2*(*ps)*Ne*(1-c12)+2.2*c12);
                 *Dw2=(1-2*Fst*(1-Fst)-(*Db2))*(1+c2)/(2*(*ps)*Ne*(1-c12)+2.2*c12);
-                // *DbDw=((*kk2)*(*Db2)*(*m))/(1-m12*(1-c));// **************************
                 *DbDw=((*kk2)*(*Db2)*m12*(1-(*m))*(*m)+(*Dw2)/(2*(*ps)*Ne))/(1-m12*(1-c)*(1-1/(*ps)/Ne));
 
                 Dw2p = (*Dw2)*c12 + (*kk4)*(*Db2)*(1-(*m))*(1-(*m))*(*m)*(*m) + 2*(*kk2)*(*DbDw)*(1-(*m))*(*m)*(1-c);
