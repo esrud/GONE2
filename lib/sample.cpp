@@ -1259,6 +1259,9 @@ void CalculateD2ParallelFst(
         }
         if (repe==0){
           if (flag_noconverge){
+          params->mixFailReason =
+              "-x analysis could not converge: no Fst in the range 0 to 1"
+              " reproduces the observed linked and unlinked d² together.";
           if (params->mixRoundProbe){
             params->mixConverged = false;
             for (int z = 0; z < numThreads; ++z) {
@@ -1494,24 +1497,41 @@ void CalculateD2ParallelFst(
   }
   else{
     params->mixConverged = false;
+    if (nxc[0] == 0) {
+      params->mixFatal = true;
+      params->mixFailReason =
+          "-x measures unlinked LD from SNP pairs on different chromosomes,"
+          " and this input has only " + std::to_string(popInfo->numCromo) +
+          " chromosome/scaffold, so no such pair exists. Fst cannot be"
+          " separated from linkage. Run the analysis over at least two"
+          " chromosomes, or use the panmictic mode (no -x).";
+    } else if (!std::isfinite(d2s05) || !std::isfinite(d2slink)) {
+      params->mixFailReason =
+          "-x analysis could not converge. The observed d² between unlinked"
+          " or linked sites is not a finite number, so the two-bin Fst search"
+          " cannot start. No Ne estimate is produced.";
+    } else if (d2 < 0) {
+      params->mixFailReason =
+          "-x analysis could not converge. The observed d² between unlinked"
+          " sites is at or below the sampling-noise floor (typically: sample"
+          " size too small, or Fst too low to be distinguished from sampling"
+          " variance). No Ne estimate is produced.";
+    } else {
+      params->mixFailReason =
+          "-x analysis could not converge. The observed d² between linked"
+          " sites is not larger than between unlinked sites, which the"
+          " two-bin Fst search requires. No Ne estimate is produced.";
+    }
     if (!params->mixRoundProbe) {
       params->twoPassGA = false;
-      std::string warn;
-      if (d2 < 0) {
-        warn = "WARNING: -x analysis could not converge. The observed d²"
-               " between unlinked sites is at or below the sampling-noise"
-               " floor (typically: sample size too small, or Fst too low"
-               " to be distinguished from sampling variance). No Ne"
-               " estimate is produced.";
+      if (nxc[0] == 0 || !std::isfinite(d2s05) || !std::isfinite(d2slink)) {
+        std::cerr << " " << params->mixFailReason << "\n" << std::endl;
+      } else if (d2 < 0) {
         std::cerr << "# Ne cannot be estimated. d2 estimate for the population is negative.\n" << std::endl;
       } else {
-        warn = "WARNING: -x analysis could not converge. The observed d²"
-               " between linked sites is not larger than between unlinked"
-               " sites, which the two-bin Fst search requires. No Ne"
-               " estimate is produced.";
         std::cerr << "# Ne cannot be estimated because the LD is smaller for linked than for unlinked markers.\n"<<std::endl;
       }
-      params->progress.SetWarning(warn);
+      params->progress.SetWarning("WARNING: " + params->mixFailReason);
       params->progress.SetStatusDetail("Mix analysis did not converge");
     }
   }

@@ -150,7 +150,7 @@ USAGE: ./gone2_tui [OPTIONS] <file_name_with_extension>
 OPTIONS:
     -h     Print out this help
     -g     Type of genotyping data. 0:unphased diploids; 1:haploids;
-           2:phased diploids; 3:low-coverage (0 by defauld). Low-coverage
+           2:phased diploids; 3:low-coverage (0 by default). Low-coverage
            assumes diploid unphased genotypes and can be used with any
            distribution of coverage within and between individuals.
     -x     The sample is considered to be a random set of individuals from
@@ -242,7 +242,7 @@ achieve drawing the chart so sometimes they would overlap the average curve. In 
 only the average is plotted.
 
 # Acknowledgements
-This study forms part of the I+D+i project PID2020-114426GB-C21 financed by MICIU/AEI/10.13039/501100011033 (Agencia Estatal de Investigación, Ministerio de Ciencia, Innovación y Universidades, Spain), and the Marine Science Programme (ThinkInAzul) supported by the Ministerio de Ciencia e Innovación and Xunta de Galicia with funding from the European Union NextGenerationEU (PRTR-C17.I1) and European Maritime and Fisheries Fund.
+This study was partially supported by the I+D+i project PID2020-114426GB-C21 financed by MICIU/AEI/10.13039/501100011033 (Agencia Estatal de Investigación, Ministerio de Ciencia, Innovación y Universidades, Spain), and the Marine Science Programme (ThinkInAzul) supported by the Ministerio de Ciencia e Innovación and Xunta de Galicia with funding from the European Union NextGenerationEU (PRTR-C17.I1) and European Maritime and Fisheries Fund.
 
 # How to cite
 Santiago, E., Köpke, C. & Caballero, A. Accounting for population structure and data quality in demographic inference with linkage disequilibrium methods. Nat Commun 16, 6054 (2025). [https://doi.org/10.1038/s41467-025-61378-w](https://doi.org/10.1038/s41467-025-61378-w)

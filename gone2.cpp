@@ -38,6 +38,22 @@ static std::terminate_handler g_prevTerminate = nullptr;
 static void RemoveProgressTmpFile() {
   if (!g_progressTmpFile.empty()) std::remove(g_progressTmpFile.c_str());
 }
+// Write a possibly multi-line failure reason to the _STATS stream, repeating
+// the comment prefix on every line so the file stays fully commented.
+// Params: out — destination stream; prefix — comment prefix to repeat;
+//   text — the reason, lines separated by '\n'.
+static void WriteReasonLines(std::ostream& out, const char* prefix,
+                             const std::string& text) {
+  size_t start = 0;
+  while (start <= text.size()) {
+    const size_t brk = text.find('\n', start);
+    const size_t end = (brk == std::string::npos) ? text.size() : brk;
+    out << prefix << text.substr(start, end - start) << "\n";
+    if (brk == std::string::npos) break;
+    start = brk + 1;
+  }
+}
+
 // std::terminate handler: remove the temp file, chain to the previous
 // terminate handler (preserving its diagnostic), then abort.
 static void TerminateCleanup() {
@@ -54,19 +70,31 @@ static void TerminateCleanup() {
 //     positive — includes the high-δ²/would-be-negative-Ne rounds, so
 //     the average is not survivor-biased; only over-corrected δ²≤0
 //     rounds are dropped),
+//   - mean per-bin SNP-pair count over those rounds (not the sum: the bin
+//     compaction thresholds downstream are absolute pair counts),
 //   - median Fst / ps / m across converged rounds,
 //   - leave the aggregated δ²pob in sampleInfo->d2[] for the GA below.
 // Stops early once kTargetConvergedRounds rounds have converged (so each
 // bin has up to that many d²pob samples to geo-mean), else after kMaxRounds.
+// When neither -s nor -i subsamples the data every round would see the same
+// SNPs and individuals — only in a different order — so a single pass is run
+// and the geo-mean/median reduce to that pass's own values.
 // Params: popInfo — genotype source; popInfoMix — metapop scratch state;
 //   sampleInfo — receives the aggregated per-bin δ²pob, raw d², and
-//   structure transform; params — run configuration (cleared twoPassGA if
-//   no SNP subset converges).
+//   structure transform; params — run configuration. If no round converges,
+//   twoPassGA and mixStructureEstimated are cleared and the reason recorded
+//   by the structure search (params->mixFailReason) is reported to stderr,
+//   the progress file and the _STATS file.
 static void RunResampledMix(PopulationInfo* popInfo,
                             PopulationInfoMix* popInfoMix,
                             SampleInfo* sampleInfo, AppParams* params) {
-  const int kMaxRounds            = 20;
-  const int kTargetConvergedRounds = 10;
+  int wantIndi = params->numSample > 0 ? params->numSample : popInfo->numIndi;
+  if (popInfo->haplotype == 2 && params->numSample > 0) wantIndi *= 2;
+  const bool singlePass =
+      (params->numSNPs <= 0 || params->numSNPs >= popInfo->numLoci) &&
+      wantIndi >= popInfo->numIndi;
+  const int kMaxRounds            = singlePass ? 1 : 20;
+  const int kTargetConvergedRounds = singlePass ? 1 : 10;
 
   std::vector<int>      cntD2(MAXBINS, 0);
   std::vector<long int> sumNxc(MAXBINS, 0);
@@ -141,6 +169,7 @@ static void RunResampledMix(PopulationInfo* popInfo,
     params->mixConverged  = true;
     CalculateD2ParallelFst(popInfoMix, popInfo, sampleInfo, params);
     params->mixRoundProbe = false;
+    if (params->mixFatal) break;
     if (!params->mixConverged) continue;
     ++converged;
 
@@ -176,6 +205,28 @@ static void RunResampledMix(PopulationInfo* popInfo,
 
   if (converged == 0) {
     params->twoPassGA = false;
+    params->mixStructureEstimated = false;
+    std::string reason = params->mixFailReason.empty()
+        ? std::string("-x analysis could not converge. No Ne estimate is"
+                      " produced.")
+        : params->mixFailReason;
+    const std::string warn =
+        (params->mixFatal
+             ? std::string("WARNING: ")
+             : singlePass
+                 ? std::string("WARNING: the -x structure search did not"
+                               " converge. ")
+                 : "WARNING: none of the " + std::to_string(kMaxRounds) +
+                       " resampled -x rounds converged. ") +
+        reason + " Only the _STATS file is written.";
+    if (!params->quiet) {
+      std::cerr << " " << warn << "\n";
+    }
+    params->progress.SetWarning(warn);
+    params->progress.SetStatusDetail("Mix analysis did not converge");
+    popInfo->ps  = 0;
+    popInfo->Fst = 0;
+    popInfo->m   = 0;
     return;
   }
 
@@ -196,6 +247,7 @@ static void RunResampledMix(PopulationInfo* popInfo,
   popInfo->Fst = Fst;
   popInfo->m   = mMig;
   popInfo->ps  = ps;
+  params->mixStructureEstimated = true;
 
   sampleInfo->binMax = binMaxSeen;
   for (int b = 0; b < binMaxSeen; ++b) {
@@ -203,7 +255,7 @@ static void RunResampledMix(PopulationInfo* popInfo,
       sampleInfo->d2[b]           = std::exp(logSumRaw[b]   / cntD2[b]);
       sampleInfo->structScale[b]  = std::exp(logSumScale[b] / cntD2[b]);
       sampleInfo->structOffset[b] = sumOffset[b] / cntD2[b];
-      sampleInfo->nxc[b]          = sumNxc[b];
+      sampleInfo->nxc[b]          = sumNxc[b] / cntD2[b];
       sampleInfo->xc[b]           = xcGrid[b];
     } else {
       sampleInfo->d2[b]           = 0.0;
@@ -215,8 +267,13 @@ static void RunResampledMix(PopulationInfo* popInfo,
   sampleInfo->structuredMix = true;
 
   if (!params->quiet) {
-    std::cerr << " Resampled -x: " << converged << " converged round(s), "
-              << usableCount << " usable bin(s).\n";
+    if (singlePass) {
+      std::cerr << " Single-pass -x (all SNPs and individuals analysed): "
+                << usableCount << " usable bin(s).\n";
+    } else {
+      std::cerr << " Resampled -x: " << converged << " converged round(s), "
+                << usableCount << " usable bin(s).\n";
+    }
   }
 }
 
@@ -226,7 +283,9 @@ static void RunResampledMix(PopulationInfo* popInfo,
 // and write the _GONE2_Ne / _GONE2_d2 / _GONE2_STATS (and -x _mix)
 // outputs. Sets up the progress temp-file cleanup handlers.
 // Params: argc/argv — command-line arguments.
-// Returns: 0 on success; error paths call exit(EXIT_FAILURE).
+// Returns: 0 on success; EXIT_FAILURE if the analysis was abandoned (too few
+//   recombination bins), in which case only _GONE2_STATS is written, carrying
+//   the reason; fatal input errors call exit(EXIT_FAILURE).
 int main(int argc, char * argv[]) {
   AppParams params;
   HandleInput(argc, argv, &params);
@@ -485,7 +544,10 @@ int main(int argc, char * argv[]) {
   }
 
   gone(&params, fichsal2, argc, argv, popInfo, sampleInfo);
-  if (params.mix) {
+  if (!params.analysisFailReason.empty()) {
+    params.twoPassGA = false;
+  }
+  if (params.mix && params.analysisFailReason.empty()) {
     params.progress.SetCurrentTask(3, "Inferring metapop structure");
     params.progress.SetStatusDetail(
         "Computing inter-/intra-chromosome d² and searching Fst, ps, m");
@@ -603,6 +665,14 @@ int main(int argc, char * argv[]) {
   salida << "# Running time:";
   salida << static_cast<float>(stop) << "sec\n";
   salida << "#\n";
+  if (!params.analysisFailReason.empty()) {
+    salida << "# ANALYSIS FAILED — NO Ne ESTIMATES WERE PRODUCED.\n";
+    WriteReasonLines(salida, "#   ", params.analysisFailReason);
+    salida << "#   Only this _STATS file was written; there is no _Ne and no"
+              " _d2 file.\n";
+    salida << "#   The statistics below describe the input data only.\n";
+    salida << "#\n";
+  }
 
   salida << "# PREPROCESSING INFORMATION:\n";
   if (params.haplotype == 0){
@@ -726,12 +796,31 @@ int main(int argc, char * argv[]) {
   salida << sampleInfo->hetEspAll<< "\n";
   if (params.mixRun) {
     salida << "#\n";
-    salida << "# Number of subpopulations in the metapopulation:\n";
-    salida << std::fixed << std::setprecision(0) << popInfo->ps << "\n";
-    salida << "# Fst among subpopulations:\n";
-    salida << std::fixed << std::setprecision(8) << popInfo->Fst << "\n";
-    salida << "# Migration rate:\n";
-    salida << std::fixed << std::setprecision(8) << popInfo->m << "\n";
+    if (!params.mixStructureEstimated) {
+      std::string why = params.mixFailReason;
+      if (!params.analysisFailReason.empty()) {
+        why = params.analysisFailReason;
+      } else if (why.empty()) {
+        why = "-x analysis could not converge.";
+      }
+      salida << "# NOT ESTIMATED: no metapopulation structure parameters and"
+                " no Ne curve (_Ne / _d2 files)\n";
+      salida << "#   were produced. Reason:\n";
+      WriteReasonLines(salida, "#   ", why);
+      salida << "# Number of subpopulations in the metapopulation:\n";
+      salida << "NA\n";
+      salida << "# Fst among subpopulations:\n";
+      salida << "NA\n";
+      salida << "# Migration rate:\n";
+      salida << "NA\n";
+    } else {
+      salida << "# Number of subpopulations in the metapopulation:\n";
+      salida << std::fixed << std::setprecision(0) << popInfo->ps << "\n";
+      salida << "# Fst among subpopulations:\n";
+      salida << std::fixed << std::setprecision(8) << popInfo->Fst << "\n";
+      salida << "# Migration rate:\n";
+      salida << std::fixed << std::setprecision(8) << popInfo->m << "\n";
+    }
   }
   params.progress.SetTaskProgress(2);
 #ifdef GONE_NCURSES_TUI
@@ -746,8 +835,12 @@ int main(int argc, char * argv[]) {
     }
     params.progress.SetStatusDetail(
         "Done. Outputs written to " + params.fileOut +
-        Gone2OutPrefix(params.mixRun) + "{Ne,d2,STATS}. "
-        "Press Ctrl-C to exit.");
+        Gone2OutPrefix(params.mixRun) +
+        ((!params.analysisFailReason.empty() ||
+          (params.mixRun && !params.mixStructureEstimated))
+             ? "STATS only"
+             : "{Ne,d2,STATS}") +
+        ". Press Ctrl-C to exit.");
     params.progress.SaveProgress();
     WaitForSigint();
   }
@@ -773,5 +866,5 @@ int main(int argc, char * argv[]) {
   delete sampleInfo;
   delete popInfo;
   delete popInfoMix;
-  return 0;
+  return params.analysisFailReason.empty() ? 0 : EXIT_FAILURE;
 }

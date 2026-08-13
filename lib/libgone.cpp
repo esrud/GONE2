@@ -13,6 +13,9 @@
 // curves, keeps the best-fitting pass, pushes live updates to the chart,
 // and writes the final _GONE2_Ne / _GONE2_d2 (plus the -E density TSV). In
 // mix mode the GA is skipped; the caller handles the structured path.
+// If fewer than kMinBinsForGA bins survive loading, nothing is estimated:
+// params->analysisFailReason is set and the function returns, leaving the
+// caller to report it in _GONE2_STATS.
 // Params: params — run configuration and progress sink; fichero — the
 //   intermediate d² file to read (its base name drives the outputs); argc/
 //   argv — original command line (echoed into _GONE2_STATS); popInfo —
@@ -57,15 +60,37 @@ void gone(AppParams *params, std::string fichero, int argc, char *argv[],
   if ((sampleInfo->flags & FLAG_RESIZE_BINS) > 0) {
     sampleInfo->sizeBins = params->sizeBins;
   } else {
-    sampleInfo->sizeBins = DEFAULT_BIN_SIZE;
+    sampleInfo->sizeBins =
+        params->mixRun ? DEFAULT_BIN_SIZE_MIX : DEFAULT_BIN_SIZE;
   }
   sampleInfo->nBins = kNumBins;
 
   const int linesRead = ProcessFile(fichero, clow, chigh, sampleInfo);
-  if (linesRead < 15) {
-    std::cerr
-        << "There are not enough recombination bins to perform the analysis.\n";
-    exit(1);
+  if (linesRead < kMinBinsForGA) {
+    const std::string what =
+        "There are not enough recombination bins to perform the analysis: " +
+        std::to_string(linesRead) + " bin(s) available, " +
+        std::to_string(kMinBinsForGA) + " required.";
+    const bool allLociAnalysed =
+        params->numSNPs <= 0 || params->numSNPs >= popInfo->numLoci;
+    const long int suggested =
+        static_cast<long int>(0.8 * static_cast<double>(sInfo->numSegLoci));
+    std::string hint =
+        "The bins are drawn from the -l / -u recombination window, so widen"
+        " that first.";
+    if (allLociAnalysed && suggested >= 2) {
+      hint += " Reducing the SNPs (e.g. -s " + std::to_string(suggested) +
+              ", 80% of the " + std::to_string(sInfo->numSegLoci) +
+              " segregating loci) can add a few bins under -x, but it cannot"
+              " help when the window itself is the limit.";
+    }
+    params->analysisFailReason = what + "\n" + hint;
+    std::cerr << " " << what << "\n";
+    std::cerr << " " << hint << "\n";
+    params->progress.SetWarning("WARNING: " + what + " " + hint);
+    params->progress.SetStatusDetail("Not enough recombination bins");
+    delete sampleInfo;
+    return;
   }
   memcpy(&(sInfo->xc[0]), &(sampleInfo->cVal[0]), linesRead * sizeof(double));
   for (int i = 0; i < linesRead; ++i) {

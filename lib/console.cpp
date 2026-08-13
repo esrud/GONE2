@@ -6,7 +6,7 @@
 void printHelp(char* appName) {
   fprintf(
     stderr,
-    "GONE2 - Genetic Optimization for Ne Estimation (v2.0 - Jul 2026)\n"
+    "GONE2 - Genetic Optimization for Ne Estimation (v3.0 - Jul 2026)\n"
     "Authors: Enrique Santiago - Carlos Köpke\n"
     "       This software estimates past demography from the distribution of LD\n"
     "       between pairs of SNP located at different distances on a genetic map.\n"
@@ -32,7 +32,7 @@ void printHelp(char* appName) {
     "OPTIONS:\n"
     "    -h     Print out this help\n"
     "    -g     Type of genotyping data. 0:unphased diploids; 1:haploids; \n"
-    "           2:phased diploids; 3:low-coverage (0 by defauld). Low-coverage\n"
+    "           2:phased diploids; 3:low-coverage (0 by default). Low-coverage\n"
     "           assumes diploid unphased genotypes and can be used with any\n"
     "           distribution of coverage within and between individuals.\n"
     "    -x     The sample is considered to be a random set of individuals from\n"
@@ -94,7 +94,7 @@ void printHelp(char* appName) {
 void HandleInput(int argc, char * argv[], AppParams* params) {
   SetDefaultParameters(params);
   for (;;) {
-    switch (getopt(argc, argv, "hxg:b:n:i:s:l:u:er:M:t:qpvS:b:zvo:f:E")) {
+    switch (getopt(argc, argv, "hxg:b:n:i:s:l:u:er:M:t:qpvS:b:zvo:f:EB:")) {
       case '?':
       case 'h':
       default:
@@ -173,6 +173,15 @@ void HandleInput(int argc, char * argv[], AppParams* params) {
         continue;
       case 't':
         params->numThreads = std::atoi(optarg);
+        continue;
+      case 'B':
+        params->sizeBins = std::atoi(optarg);
+        if (params->sizeBins < 1) {
+          std::cerr << "Invalid minimum number of SNP pairs per bin. Must be"
+                       " at least 1." << std::endl;
+          exit(EXIT_FAILURE);
+        }
+        params->flags |= FLAG_RESIZE_BINS;
         continue;
       case 'q':
         params->quiet = true;
@@ -287,6 +296,10 @@ void SetDefaultParameters(AppParams* params) {
   params->showNeBand = false;
   params->mixRoundProbe = false;
   params->mixConverged = true;
+  params->mixStructureEstimated = false;
+  params->mixFatal = false;
+  params->mixFailReason.clear();
+  params->analysisFailReason.clear();
 }
 
 // Determine the input file type from its extension (ped/vcf/tped).

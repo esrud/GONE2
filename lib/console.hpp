@@ -42,6 +42,10 @@ typedef struct {
     bool showNeBand;
     bool mixRoundProbe;
     bool mixConverged;
+    bool mixStructureEstimated;
+    bool mixFatal;
+    std::string mixFailReason;
+    std::string analysisFailReason;
     std::vector<double> chartNTMix;
     ProgressStatus progress;
 } AppParams;

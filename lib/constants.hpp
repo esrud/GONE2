@@ -31,6 +31,7 @@ static_assert(kMaxD2PredBins >= 60, "kMaxD2PredBins must cover d2 bins");
 #define kResolucion 3
 #define kMuestraSalida 10
 #define kNumBins 50
+#define kMinBinsForGA 15
 
 #define kTopePosInicio1 60
 #define kTopePosInicio2 120
@@ -64,6 +65,7 @@ static_assert(kMaxD2PredBins >= 60, "kMaxD2PredBins must cover d2 bins");
 #define FLAG_POR_BLOQUES true
 
 #define DEFAULT_BIN_SIZE 10000
+#define DEFAULT_BIN_SIZE_MIX 1000
 #define MAX_NE_SIZE 10000000.0
 #define MIN_NE_SIZE 1.0
 
