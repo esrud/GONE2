@@ -1,6 +1,7 @@
 
 #include "sample.hpp"
 #include "pool.hpp"
+#include <algorithm>
 #include <cmath>
 #include <iomanip>
 #include <ios>
@@ -62,6 +63,8 @@ static void BuildPopMafMask(const PopulationInfo* popInfo, double maf,
 // homozygote frequency at each segregating locus in the sample. Marks
 // loci as segregating only when the allele frequency is strictly in
 // (0, 1) and at most 20% of genotype calls at that locus are missing.
+// Segregating flags are cleared for every locus first, so loci flagged by
+// an earlier call (e.g. a previous -x round) are not carried over.
 // Params: popInfo — genotype source (the shuffled subsample is used);
 //   sampleInfo — receives per-locus frequency/homozygote values, the
 //   segregating flags, and the segregating-locus count.
@@ -73,12 +76,12 @@ void CalculateFrequencies(PopulationInfo* popInfo, SampleInfo* sampleInfo) {
   uint8_t ff, gg;
 
   sampleInfo->hetEsp = 0;
+  std::fill(sampleInfo->segrega, sampleInfo->segrega + popInfo->numLoci, false);
   const int mincontaIndX = int(float(sampleInfo->sampleSizeIndi) * 2.0 * 0.8);
   for (int j = 0; j < sampleInfo->numLoci; ++j) {
     locus = sampleInfo->shuffledLoci[j];
     sampleInfo->frec[locus]    = 0;
     sampleInfo->homo[locus]    = 0;
-    sampleInfo->segrega[locus] = false;
     contaIndX = 0;
     if (popInfo->haplotype != 2) {
       for (int i = 0; i < sampleInfo->sampleSizeIndi; i++) {
